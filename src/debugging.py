@@ -141,70 +141,70 @@ fig.savefig("../figures/BFD_Hoogendoorn_Voronoi_Comparison_LaneWidth_2p5.pdf", d
 sys.exit(1)
 
 # #############################################################################
-# MAIN: Computing PFD Pseudo-States by Video
-# #############################################################################
-pfd_df_all = None
-print(f"... Processing video {video}.")
-counter = 0
-for part in CRB_Config.video_parts_X[video]:
-    df = pd.read_csv(CRB_Config.data_root + f"{video}_{part}.txt")
-    df = compute_lane_coordinates(df)
-    df = determine_leader(df)
-    pfd_df = compute_pseudo_states_pfd_N2(df, CRB_Config.video_lane_widths[video], config=CRB_Config)
-    pfd_df["Density"] = pfd_df["Density"]/CRB_Config.video_lane_widths[video]
-    pfd_df["Flow"] = pfd_df["Flow"]/CRB_Config.video_lane_widths[video]
-    pfd_df["Video"] = video
-    pfd_df["Video_Part"] = part
-    if pfd_df_all is None:
-        pfd_df_all = pfd_df.copy()
-    else:
-        pfd_df_all = pd.concat((pfd_df_all, pfd_df))
+# # MAIN: Computing PFD Pseudo-States by Video
+# # #############################################################################
+# pfd_df_all = None
+# print(f"... Processing video {video}.")
+# counter = 0
+# for part in CRB_Config.video_parts_X[video]:
+#     df = pd.read_csv(CRB_Config.data_root + f"{video}_{part}.txt")
+#     df = compute_lane_coordinates(df)
+#     df = determine_leader(df)
+#     pfd_df = compute_pseudo_states_pfd_N2(df, CRB_Config.video_lane_widths[video], config=CRB_Config)
+#     pfd_df["Density"] = pfd_df["Density"]/CRB_Config.video_lane_widths[video]
+#     pfd_df["Flow"] = pfd_df["Flow"]/CRB_Config.video_lane_widths[video]
+#     pfd_df["Video"] = video
+#     pfd_df["Video_Part"] = part
+#     if pfd_df_all is None:
+#         pfd_df_all = pfd_df.copy()
+#     else:
+#         pfd_df_all = pd.concat((pfd_df_all, pfd_df))
     
-    del pfd_df
-    counter += 1
-    print(f"... Processed video part {part}. Finished {counter}/{len(CRB_Config.video_parts_X[video])}.")
-gc.collect()
+#     del pfd_df
+#     counter += 1
+#     print(f"... Processed video part {part}. Finished {counter}/{len(CRB_Config.video_parts_X[video])}.")
+# gc.collect()
 
-bin_width = 0.3
-pfd_df_all['Density_Bin'] = pd.cut(pfd_df_all['Density'], bins=np.arange(0, 200.0, bin_width))
-pfd_df_agg = pfd_df_all.groupby(["Density_Bin"], observed=False).agg({
-    "Density": "mean", 
-    "Flow": "mean",
-    "Speed": "mean",
-    "Density_Bin": "count"
-})
-pfd_df_agg = pfd_df_agg.rename(
-    columns={"Density_Bin": "Num_Observations"}
-)
-pfd_df_agg = pfd_df_agg.dropna()
-pfd_df_agg = pfd_df_agg[pfd_df_agg['Num_Observations'] >= 50]
+# bin_width = 0.3
+# pfd_df_all['Density_Bin'] = pd.cut(pfd_df_all['Density'], bins=np.arange(0, 200.0, bin_width))
+# pfd_df_agg = pfd_df_all.groupby(["Density_Bin"], observed=False).agg({
+#     "Density": "mean", 
+#     "Flow": "mean",
+#     "Speed": "mean",
+#     "Density_Bin": "count"
+# })
+# pfd_df_agg = pfd_df_agg.rename(
+#     columns={"Density_Bin": "Num_Observations"}
+# )
+# pfd_df_agg = pfd_df_agg.dropna()
+# pfd_df_agg = pfd_df_agg[pfd_df_agg['Num_Observations'] >= 50]
 
-ts_df_all_Vor['Density'] = ts_df_all_Vor['Density'] * 0.6
-ts_df_all_Vor['Flow'] = ts_df_all_Vor['Flow'] * 0.6
-ts_df_all_Vor['Density_Bin'] = pd.cut(ts_df_all_Vor['Density'], bins=np.arange(0, 200.0, bin_width))
-ts_df_agg = ts_df_all_Vor.groupby(["Density_Bin"], observed=False).agg({
-    "Density": "mean", 
-    "Flow": "mean",
-    "Speed": "mean",
-    "Density_Bin": "count"
-})
-ts_df_agg = ts_df_agg.rename(
-    columns={"Density_Bin": "Num_Observations"}
-)
-ts_df_agg = ts_df_agg.dropna()
-ts_df_agg = ts_df_agg[ts_df_agg['Num_Observations'] >= 50]
+# ts_df_all_Vor['Density'] = ts_df_all_Vor['Density'] * 0.6
+# ts_df_all_Vor['Flow'] = ts_df_all_Vor['Flow'] * 0.6
+# ts_df_all_Vor['Density_Bin'] = pd.cut(ts_df_all_Vor['Density'], bins=np.arange(0, 200.0, bin_width))
+# ts_df_agg = ts_df_all_Vor.groupby(["Density_Bin"], observed=False).agg({
+#     "Density": "mean", 
+#     "Flow": "mean",
+#     "Speed": "mean",
+#     "Density_Bin": "count"
+# })
+# ts_df_agg = ts_df_agg.rename(
+#     columns={"Density_Bin": "Num_Observations"}
+# )
+# ts_df_agg = ts_df_agg.dropna()
+# ts_df_agg = ts_df_agg[ts_df_agg['Num_Observations'] >= 50]
 
-plt.figure()
-plt.scatter(pfd_df_agg['Density'], pfd_df_agg['Flow'])
-plt.scatter(ts_df_agg['Density'], ts_df_agg['Flow'])
-plt.ylim([0, 2500])
-plt.xlim([0, 200])
+# plt.figure()
+# plt.scatter(pfd_df_agg['Density'], pfd_df_agg['Flow'])
+# plt.scatter(ts_df_agg['Density'], ts_df_agg['Flow'])
+# plt.ylim([0, 2500])
+# plt.xlim([0, 200])
 
-plt.figure()
-plt.scatter(pfd_df_agg['Density'], pfd_df_agg['Speed'])
-plt.scatter(ts_df_agg['Density'], ts_df_agg['Speed'])
-plt.ylim([0, 30])
-plt.xlim([0, 200])
+# plt.figure()
+# plt.scatter(pfd_df_agg['Density'], pfd_df_agg['Speed'])
+# plt.scatter(ts_df_agg['Density'], ts_df_agg['Speed'])
+# plt.ylim([0, 30])
+# plt.xlim([0, 200])
 
-plt.show()
+# plt.show()
 

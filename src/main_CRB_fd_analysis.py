@@ -23,7 +23,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # CONSTANT for BFD
-USE_HEADWAY_HOOGENDOORN = False
+USE_HEADWAY_HOOGENDOORN = True
 from _log_config import create_log_file
 if USE_HEADWAY_HOOGENDOORN:
     create_log_file(logfile = "../logs/CRB_FD_Analysis_Hoogendoorn.log")

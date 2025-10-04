@@ -202,7 +202,7 @@ files = [
 Hmax, dh = 50.0, 0.05
 h = np.arange(0.0, Hmax+dh, dh)
 
-lane_width_setting = 3.75
+lane_width_setting = 2.5
 figsame, axsame = plt.subplots(1, 2, figsize=(8, 4))
 for (label, path, save_name) in files:
     print(f"\n\n {label} METHOD")
@@ -325,11 +325,11 @@ for (label, path, save_name) in files:
     print(f"{label}, 3.75 Lane Width: Capacity = {3600/(3.75*EX):.2f} bic/h/m")
 
     if label == 'Hoogendoorn':
-        axsame[0].plot(h, g1_final/phi_final, label=f'$g(h)$, {label}', alpha=0.6, linestyle='--')
-        axsame[1].plot(h, r1_final/(1-phi_final), label=f'$r(h)$, {label}', alpha=0.6, linestyle='--')
+        axsame[0].plot(h, g1_final/phi_final, label=f'{label}', alpha=0.6, linestyle='--')
+        axsame[1].plot(h, r1_final/(1-phi_final), label=f'{label}', alpha=0.6, linestyle='--')
     else:
-        axsame[0].plot(h, g1_final/phi_final, label=f'$g(h)$, {label}', alpha=0.6)
-        axsame[1].plot(h, r1_final/(1-phi_final), label=f'$r(h)$, {label}', alpha=0.6)
+        axsame[0].plot(h, g1_final/phi_final, label=f'${label}', alpha=0.6)
+        axsame[1].plot(h, r1_final/(1-phi_final), label=f'{label}', alpha=0.6)
 
 
 axsame[0].legend(loc='upper right')
