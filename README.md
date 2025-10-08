@@ -1,10 +1,10 @@
 # Bicycle Fundamental Diagram (BFD) method
 
 ## Data Sources
-- CRB Dataset: Available at the GitHub repository:
+- **CRB Dataset**: Available at the GitHub repository:
 https://github.com/DerKevinRiehl/mass_cycling_experiment.git
-- SRF Dataset: Available at the GitHub repository: https://github.com/DerKevinRiehl/trajectory_analysis.git
-- NGSIM Dataset: Available at https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm
+- **SRF Dataset**: Available at the GitHub repository: https://github.com/DerKevinRiehl/trajectory_analysis.git
+- **NGSIM Dataset**: Available at https://ops.fhwa.dot.gov/trafficanalysistools/ngsim.htm
 
 ## Installation & Run Instructions for Reproduction
 Please create a dedicated conda environment (recommended Python 3.11+). To install requirements, please use the package management system pip as follows:
