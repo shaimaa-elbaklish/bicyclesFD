@@ -76,7 +76,8 @@ Speed_Mat = np.empty(shape=(n_t_rows, n_x_cols))
 Num_Observations_Mat = np.zeros(shape=(n_t_rows, n_x_cols))
 Density_Mat.fill(np.nan)
 Flow_Mat.fill(np.nan)
-Speed_Mat.fill(np.nan)
+# Speed_Mat.fill(np.nan)
+Speed_Mat.fill(15.0)
 for _, row in grouped.iterrows():
     it = int((row['Time_Bin'].left - pfd_df['Global_Time'].min())/dt)
     jx = int(row['Polar_X_Bin'].left/dx)
@@ -101,7 +102,7 @@ space_x_ticks = space_x_ticks[::-1]
 time_ticks = np.linspace(0, (pfd_df['Global_Time'].max()-pfd_df['Global_Time'].min())+dt, 5)
 
 fig, ax = plt.subplots(figsize=(4, 4))
-ax.matshow(Speed_Mat, cmap=cmap, vmin=0, vmax=13, aspect='auto')
+sc = ax.matshow(Speed_Mat, cmap=cmap, vmin=0, vmax=15, aspect='auto')
 ax.set_yticks(np.linspace(0, n_x_cols, len(space_x_ticks)))
 ax.set_yticklabels(np.round(space_x_ticks, 2))
 ax.set_ylabel('Polar X Position [rad]')
@@ -109,11 +110,12 @@ ax.set_xticks(np.linspace(0, n_t_rows, len(time_ticks)))
 ax.set_xticklabels(np.round(time_ticks, 1), rotation=0)
 ax.set_xlabel('Time [s]')
 ax.xaxis.set_ticks_position('bottom')
+plt.colorbar(sc, ax=ax, pad=0.04).set_label('Speed [km/h]', rotation=90)
 fig.tight_layout()
 
 
 # For Polar_Y
-grouped = pfd_df.groupby(by=['Time_Bin', 'Polar_X_Bin', 'Polar_Y_Bin'], observed=False).agg(
+grouped = pfd_df.groupby(by=['Time_Bin', 'Polar_Y_Bin'], observed=False).agg(
     Num_Observations=pd.NamedAgg(column="Density", aggfunc="count"),
     Density=pd.NamedAgg(column="Density", aggfunc="mean"),
     Flow=pd.NamedAgg(column="Flow", aggfunc="mean"),
@@ -129,7 +131,8 @@ Speed_Mat = np.empty(shape=(n_t_rows, n_y_cols))
 Num_Observations_Mat = np.zeros(shape=(n_t_rows, n_y_cols))
 Density_Mat.fill(np.nan)
 Flow_Mat.fill(np.nan)
-Speed_Mat.fill(np.nan)
+# Speed_Mat.fill(np.nan)
+Speed_Mat.fill(15.0)
 for _, row in grouped.iterrows():
     it = int((row['Time_Bin'].left - pfd_df['Global_Time'].min())/dt)
     jx = int((row['Polar_Y_Bin'].left - CRB_Config.circle_outer_radius + CRB_Config.video_lane_widths[video])/dy)
@@ -154,7 +157,7 @@ space_y_ticks = space_y_ticks[::-1]
 time_ticks = np.linspace(0, (pfd_df['Global_Time'].max()-pfd_df['Global_Time'].min())+dt, 5)
 
 fig, ax = plt.subplots(figsize=(4, 4))
-ax.matshow(Speed_Mat, cmap=cmap, vmin=0, vmax=13, aspect='auto')
+sc = ax.matshow(Speed_Mat, cmap=cmap, vmin=0, vmax=15, aspect='auto')
 ax.set_yticks(np.linspace(0, n_y_cols, len(space_y_ticks)))
 ax.set_yticklabels(np.round(space_y_ticks, 2))
 ax.set_ylabel('Polar Y Position [m]')
@@ -162,6 +165,7 @@ ax.set_xticks(np.linspace(0, n_t_rows, len(time_ticks)))
 ax.set_xticklabels(np.round(time_ticks, 1), rotation=0)
 ax.set_xlabel('Time [s]')
 ax.xaxis.set_ticks_position('bottom')
+plt.colorbar(sc, ax=ax, pad=0.04).set_label('Speed [km/h]', rotation=90)
 fig.tight_layout()
 
 # sys.exit(1)

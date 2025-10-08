@@ -53,14 +53,11 @@ np.random.seed(seed_value)
 # #############################################################################
 # MAIN: Comparing BFD methods
 # #############################################################################
+
 pfd_df_all = pd.read_csv("../data/CRB_PseudoTrafficStates_ALLVideos_V2.txt")
+# pfd_df_all_Hoogendoorn = pd.read_csv("C:/Users/ShaimaaElBaklish/Documents/GitHub/bicycle_dataset/src/logs/PFD_X_PseudoStates_ALLVideos.txt")
 pfd_df_all_Hoogendoorn = pd.read_csv("../data/CRB_PseudoTrafficStates_Hoogendoorn_ALLVideos_V2.txt")
 ts_df_all = pd.read_csv("../data/CRB_Voronoi_PseudoTrafficStates_ALLVideos.txt")
-# # These factors are the mean Polar_Y_Dist for each set of lane width settings
-# ts_df_all.loc[ts_df_all['Video'].isin(CRB_Config.videos[:-3]), 'Density'] *= (0.426+0.6128)/2
-# ts_df_all.loc[ts_df_all['Video'].isin(CRB_Config.videos[:-3]), 'Flow'] *= (0.426+0.6128)/2
-# ts_df_all.loc[ts_df_all['Video'].isin(CRB_Config.videos[-3:]), 'Density'] *= (0.566+0.78)/2
-# ts_df_all.loc[ts_df_all['Video'].isin(CRB_Config.videos[-3:]), 'Flow'] *= (0.566+0.78)/2
 
 # pfd_df_all = pd.read_csv("../data/CRB_PseudoTrafficStates_ALLVideos.txt")
 # plt.figure()
