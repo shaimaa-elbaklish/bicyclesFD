@@ -198,17 +198,17 @@ def aggregate_fd(ts_df: pd.DataFrame, max_density: float, bin_width: float,
         k_crit = res[-1]
         k_FD, q_FD, v_FD = res[0], res[1], res[2]
         Q_cap = np.amax(q_FD)
-        axs[0].plot(k_FD[k_FD <= k_crit*1.2], q_FD[k_FD <= k_crit*1.2], label="k-q Free-Flow FD", linestyle="dashed", color="blue")
-        axs[1].plot(k_FD[k_FD <= k_crit*1.2], v_FD[k_FD <= k_crit*1.2], label="k-v Free-Flow FD", linestyle="dashed", color="blue")
+        axs[0].plot(k_FD[k_FD <= k_crit*1.05], q_FD[k_FD <= k_crit*1.05], label="k-q Free-Flow FD", linestyle="dashed", color="blue")
+        axs[1].plot(k_FD[k_FD <= k_crit*1.05], v_FD[k_FD <= k_crit*1.05], label="k-v Free-Flow FD", linestyle="dashed", color="blue")
         
         if jam_density is None:
             jam_density = k_crit * np.power(res[-4]/(res[-4]-res[-3]), 1/res[-2]) # np.power(vf/(vf-v_cr), 1/delta) * k_crit
-        cong_idxs = (Ks >= k_crit*0.75) & (Qs <= Q_cap)
+        cong_idxs = (Ks >= k_crit*0.5) & (Qs <= Q_cap)
         res = _calibrate_FD(Ks=Ks[cong_idxs], Qs=Qs[cong_idxs], Vs=Vs[cong_idxs], FD_form='WuCongFD', loss_fn=loss_fn, log_results=log_results, k_jam_est=jam_density)
         # WuCongFD returns: K_test, Q_pred_cong, V_pred_cong, k_jam, w
         k_FD, q_FD, v_FD = res[0], res[1], res[2]
-        axs[0].plot(k_FD[k_FD >= k_crit*0.75], q_FD[k_FD >= k_crit*0.75], label="k-q Congested FD", linestyle="dashed", color="red")
-        axs[1].plot(k_FD[k_FD >= k_crit*0.75], v_FD[k_FD >= k_crit*0.75], label="k-v Congested FD", linestyle="dashed", color="red")
+        axs[0].plot(k_FD[k_FD >= k_crit*0.5], q_FD[k_FD >= k_crit*0.5], label="k-q Congested FD", linestyle="dashed", color="red")
+        axs[1].plot(k_FD[k_FD >= k_crit*0.5], v_FD[k_FD >= k_crit*0.5], label="k-v Congested FD", linestyle="dashed", color="red")
     
     # axs[0].legend(loc='upper right')
     # axs[1].legend(loc='upper right')

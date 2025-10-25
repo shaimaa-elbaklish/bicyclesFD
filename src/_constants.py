@@ -135,6 +135,19 @@ class SRF_Config:
     videos_inner: Tuple = ("DJI_0939.MOV", "DJI_0940.MOV", "DJI_0943.MOV", "DJI_0944.MOV")
     videos_outer: Tuple = ("DJI_0933.MOV", "DJI_0934.MOV")
     sampling_freq: float = 25.0
+
+
+# #############################################################################
+# CONSTANTS: NGSIM dataset
+# #############################################################################
+@dataclass
+class NGSIM_Config:
+    data_root: str = "C:/Users/ShaimaaElBaklish/Documents/Datasets/NGSIM/"
+    locations: Tuple[str] = ("Lankershim-Boulevard-LosAngeles-CA",
+                             "Peachtree-Street-Atlanta-GA")
+    traj_filenames: Tuple[str] = ("NGSIM__Lankershim_Vehicle_Trajectories.csv",
+                                  "NGSIM_Peachtree_Vehicle_Trajectories.csv")
+    sampling_freq: float = 10.0
     
 
 

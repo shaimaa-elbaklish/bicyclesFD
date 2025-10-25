@@ -39,30 +39,36 @@ np.random.seed(seed_value)
 # #############################################################################
 # METHODS
 # #############################################################################
-def compute_pseudo_states_pfd_N2(df, FPS=25.0):  
+def compute_pseudo_states_pfd_N2(df, FPS=25.0, NGSIM_flag=False):  
     subdf = df.copy()
     subdf = subdf.sort_values(by=['Vehicle_ID', 'Frame_ID'], ascending=True)
     subdf = subdf.reset_index().drop(columns='index')
     subdf[['Next_Lane_X', 'Next_Space_Hdwy']] = subdf.groupby('Vehicle_ID')[['Lane_X', 'Space_Hdwy']].shift(-1)
-    subdf = subdf.drop(subdf[subdf["Frame_ID"]==subdf["Frame_ID"].max()].index)
+    if NGSIM_flag:
+        subdf = subdf[(subdf['Preceding'] > 0) & (subdf['Space_Hdwy'] > 0) & ((subdf['Next_Space_Hdwy'] > 0))]
+        subdf = subdf[(subdf['v_Class'] == 2) & (subdf['Direction'] == 2) & (subdf['Num_Lanes'] == 1)]
+        subdf = subdf[(subdf['Lane_ID'] >= 1)]
+    else:
+        subdf = subdf.drop(subdf[subdf["Frame_ID"]==subdf["Frame_ID"].max()].index)
     subdf = subdf.dropna()
     
     num_vehicles = 2
     avg_veh_length = 4.5 # m 
-    grouped = subdf[["Global_Time", "Vehicle_ID", "Proceeding", "Lane_X", "Next_Lane_X", "Space_Hdwy", "Next_Space_Hdwy"]].copy()
+    grouped = subdf[["Global_Time", "Vehicle_ID", "Preceding", "Lane_X", "Next_Lane_X", "Space_Hdwy", "Next_Space_Hdwy"]].copy()
     grouped["TTT"] =  (1/FPS) * (num_vehicles-1) / 3600.0 # hour
     grouped["x0"] = grouped["Lane_X"]
     grouped["xt"] = grouped["Next_Lane_X"]
     grouped["xL0"] = grouped["x0"] + grouped["Space_Hdwy"]
     grouped["xLt"] = grouped["xt"] + grouped["Next_Space_Hdwy"]
-    grouped["TTD"] = (grouped["xt"]-grouped["x0"]) / 1000.0 # km
-    grouped["Area"] = 0.5*(1/FPS/3600.0)*(grouped["xL0"]-grouped["x0"] + grouped["xLt"]-grouped["xt"] + 2*avg_veh_length)/1000.0
+    grouped["TTD"] = abs(grouped["xt"]-grouped["x0"]) / 1000.0 # km
+    grouped["TTD"] = np.round(grouped["TTD"], decimals=6)
+    grouped["Area"] = 0.5*(1/FPS/3600.0)*(abs(grouped["xL0"]-grouped["x0"]) + abs(grouped["xLt"]-grouped["xt"]) + 2*avg_veh_length)/1000.0
     grouped["Area"] = grouped["Area"].astype(np.float64).clip(lower=0)
     grouped = grouped[grouped['Area'] > 0]
     grouped["Density"] = grouped["TTT"] / grouped["Area"]
     grouped["Flow"] = grouped["TTD"] / grouped["Area"]
     grouped["Speed"] = grouped["Flow"] / grouped["Density"]
-    grouped["Vehicle_IDs"] = grouped[["Proceeding", "Vehicle_ID"]].values.tolist()
+    grouped["Vehicle_IDs"] = grouped[["Preceding", "Vehicle_ID"]].values.tolist()
     
     grouped = grouped[["Global_Time", "Vehicle_IDs", "Density", "Flow", "Speed", "TTT", "TTD"]]
     
@@ -93,6 +99,7 @@ def aggregate_FD(ts_df, max_density=180.0, bin_width=0.3, min_observations=15):
 pfd_df_all = None
 for video in SRF_Config.videos_outer:
     df = pd.read_csv(SRF_Config.data_root + video + "_norelax.txt", sep=",")
+    df = df.rename(columns={'Proceeding': 'Preceding'})
     pfd_df = compute_pseudo_states_pfd_N2(df)
     if pfd_df_all is None:
         pfd_df_all = pfd_df.copy()
@@ -108,6 +115,7 @@ car_agg_df_outer = aggregate_FD(pfd_df_all, max_density=180.0, bin_width=0.3, mi
 pfd_df_all = None
 for video in SRF_Config.videos_inner:
     df = pd.read_csv(SRF_Config.data_root + video + "_norelax.txt", sep=",")
+    df = df.rename(columns={'Proceeding': 'Preceding'})
     pfd_df = compute_pseudo_states_pfd_N2(df)
     if pfd_df_all is None:
         pfd_df_all = pfd_df.copy()
@@ -289,16 +297,37 @@ fig.tight_layout()
 fig.savefig('../figures/BFD_CarsComparison_Trip.pdf', dpi=300, bbox_inches='tight')
 
 # #############################################################################
+# MAIN: Process NGSIM Dataset
+# #############################################################################
+from _constants import NGSIM_Config
+
+df = pd.read_csv(NGSIM_Config.data_root + f"{NGSIM_Config.locations[0]}/{NGSIM_Config.traj_filenames[0]}")
+df['Global_Time'] = df['Global_Time'].astype(float)
+df['Global_Time'] = df['Global_Time']/1000.0
+df = df.rename(columns={
+    'Space_Headway': 'Space_Hdwy', 'Time_Headway': 'Time_Hdwy', 
+    'Local_Y': 'Lane_X', 'Local_X': 'Lane_Y'
+})
+df['Lane_X'] = np.round(df['Lane_X'] / 3.281, decimals=3)  # feet to meter
+df['Lane_Y'] = np.round(df['Lane_Y'] / 3.281, decimals=3)  # feet to meter
+df['Space_Hdwy'] = np.round(df['Space_Hdwy'] / 3.281, decimals=3)  # feet to meter
+df['v_Vel'] = np.round(df['v_Vel'] / 3.281, decimals=3)  # feet/s to m/s
+df['Num_Lanes'] = df.groupby('Vehicle_ID')['Lane_ID'].transform('nunique')
+
+ngsim_pfd_df = compute_pseudo_states_pfd_N2(df, FPS=NGSIM_Config.sampling_freq, NGSIM_flag=True)
+car_agg_df = aggregate_FD(ngsim_pfd_df, max_density=180.0, bin_width=0.3, min_observations=15)
+
+# #############################################################################
 # MAIN: Compare FDs with NGSIM
 # #############################################################################
-ngsim_pfd_path = "C:/Users/ShaimaaElBaklish/Desktop/Python_Workspace/PFD_Final/NGSIM_pfd_traffic_states.csv"
-ngsim_pfd_df = pd.read_csv(ngsim_pfd_path)
-ngsim_pfd_df['Density'] = ngsim_pfd_df['Density'] / 1.60934 # veh/mile to veh/km
-ngsim_pfd_df['Speed'] = ngsim_pfd_df['Speed'] * 1.60934 # mph to km/h
+# ngsim_pfd_path = "C:/Users/ShaimaaElBaklish/Desktop/Python_Workspace/PFD_Final/NGSIM_pfd_traffic_states.csv"
+# ngsim_pfd_df = pd.read_csv(ngsim_pfd_path)
+# ngsim_pfd_df['Density'] = ngsim_pfd_df['Density'] / 1.60934 # veh/mile to veh/km
+# ngsim_pfd_df['Speed'] = ngsim_pfd_df['Speed'] * 1.60934 # mph to km/h
 
-car_agg_df = aggregate_FD(ngsim_pfd_df, max_density=180.0, bin_width=0.3, min_observations=25)
+# car_agg_df = aggregate_FD(ngsim_pfd_df, max_density=180.0, bin_width=0.3, min_observations=25)
 
-v0_car, d0_car = 60.0,(4.5 + 2)/1000.0
+v0_car, d0_car = 40.0,(4.5 + 2)/1000.0
 
 car_agg_df['Density_Scaled'] = car_agg_df['Density'] * d0_car
 car_agg_df['Flow_Scaled'] = car_agg_df['Flow'] * d0_car / v0_car
