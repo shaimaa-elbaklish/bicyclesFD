@@ -22,11 +22,11 @@ warnings.filterwarnings('ignore')
 import numpy as np
 import pandas as pd
 
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 # import matplotlib.colors as mcolors
-plt.ioff()
+# plt.ioff()
 
 from tqdm import tqdm
 from scipy.ndimage import gaussian_filter
@@ -541,129 +541,129 @@ grouped = grouped.reset_index().dropna()
 grouped = grouped[grouped['Num_Observations'] >= 5]
 time_interval_idx = pd.IntervalIndex(grouped['Time_Bin'].tolist())
 
-# # #############################################################################
-# # MAIN: SINGLE FRAME
-# # #############################################################################
-# # FRAME, HOMOGRAPHY
-# success, frame = extractFrameFromVideo(video_file_path, RELEVANT_FRAME)
-# frame_homography = getFrameHomography(df_homography, RELEVANT_FRAME)
-# frame_trajectory = df_final_trajectory[df_final_trajectory['Frame_ID'] == RELEVANT_FRAME].copy()
+# #############################################################################
+# MAIN: SINGLE FRAME
+# #############################################################################
+# FRAME, HOMOGRAPHY
+success, frame = extractFrameFromVideo(video_file_path, RELEVANT_FRAME)
+frame_homography = getFrameHomography(df_homography, RELEVANT_FRAME)
+frame_trajectory = df_final_trajectory[df_final_trajectory['Frame_ID'] == RELEVANT_FRAME].copy()
 
-# frame_time = np.round(RELEVANT_FRAME / CRB_Config.sampling_freq, decimals=2)
-# frame_bfd_states = grouped[time_interval_idx.contains(frame_time)].copy()
+frame_time = np.round(RELEVANT_FRAME / CRB_Config.sampling_freq, decimals=2)
+frame_bfd_states = grouped[time_interval_idx.contains(frame_time)].copy()
 
-# # cartesian coordinates of center of track
-# x_c, y_c, r_c = 0, 0, CRB_Config.circle_outer_radius 
-# center_cart = [x_c, y_c]
+# cartesian coordinates of center of track
+x_c, y_c, r_c = 0, 0, CRB_Config.circle_outer_radius 
+center_cart = [x_c, y_c]
 
-# rgba_crop, bbox = make_faded_circular_crop_frame(
-#     frame, center_cart, r_c, frame_homography, fade_alpha=0.75, blur_radius=5
-# )
-# plt.figure(figsize=(5,5))
-# plt.imshow(rgba_crop)
-# plt.axis('off')
-# plt.title("Faded circular crop (RGBA)")
-# plt.show()
+rgba_crop, bbox = make_faded_circular_crop_frame(
+    frame, center_cart, r_c, frame_homography, fade_alpha=0.75, blur_radius=5
+)
+plt.figure(figsize=(5,5))
+plt.imshow(rgba_crop)
+plt.axis('off')
+plt.title("Faded circular crop (RGBA)")
+plt.show()
 
 
 
-# # x0, y0, _, _ = bbox
-# # overlay = rgba_crop.copy()
-# # for _, row in frame_trajectory.iterrows():
-# #     # Convert polar → Cartesian (assuming Y positive down)
-# #     X_cart = row['Polar_Y'] * np.cos(row['Polar_X'])
-# #     Y_cart = -row['Polar_Y'] * np.sin(row['Polar_X'])
-# #     # Transform to pixel coordinates
-# #     pos_pix = transformPointFrom_CARTESIAN_2_PIX([X_cart, Y_cart], frame_homography)
-# #     x, y = int(pos_pix[0]) - x0, int(pos_pix[1]) - y0
+# x0, y0, _, _ = bbox
+# overlay = rgba_crop.copy()
+# for _, row in frame_trajectory.iterrows():
+#     # Convert polar → Cartesian (assuming Y positive down)
+#     X_cart = row['Polar_Y'] * np.cos(row['Polar_X'])
+#     Y_cart = -row['Polar_Y'] * np.sin(row['Polar_X'])
+#     # Transform to pixel coordinates
+#     pos_pix = transformPointFrom_CARTESIAN_2_PIX([X_cart, Y_cart], frame_homography)
+#     x, y = int(pos_pix[0]) - x0, int(pos_pix[1]) - y0
     
-# #     # Draw circle marker
-# #     cv2.circle(overlay, (x, y), 6, (255, 0, 0, 255), -1)
+#     # Draw circle marker
+#     cv2.circle(overlay, (x, y), 6, (255, 0, 0, 255), -1)
 
-# #     # Label angle in degrees
-# #     angle_deg = np.degrees(row['Polar_X'])
-# #     label = f"{angle_deg:.0f}deg"
-# #     cv2.putText(
-# #         overlay, label, (x + 10, y - 10),
-# #         cv2.FONT_HERSHEY_SIMPLEX, 2.5,
-# #         (255, 255, 255, 255), 3, cv2.LINE_AA
-# #     )
+#     # Label angle in degrees
+#     angle_deg = np.degrees(row['Polar_X'])
+#     label = f"{angle_deg:.0f}deg"
+#     cv2.putText(
+#         overlay, label, (x + 10, y - 10),
+#         cv2.FONT_HERSHEY_SIMPLEX, 2.5,
+#         (255, 255, 255, 255), 3, cv2.LINE_AA
+#     )
 
-# # plt.figure(figsize=(6, 6))
-# # plt.imshow(cv2.cvtColor(overlay, cv2.COLOR_BGRA2RGBA))
-# # plt.title("Polar angle convention check")
-# # plt.axis('off')
-# # plt.show()
-# # sys.exit(1)
-
-# overlay = draw_cyclist_circles_on_frame(
-#     rgba_crop, frame_trajectory, frame_homography, bbox, alpha=0.75,
-#     circle_radius_m=(1.8+0.5)/2, color=(0, 0, 0), border_thickness=5, 
-#     text_color=(0, 0, 0), font_scale=2.25, font_thickness=3
-# )
-# plt.figure(figsize=(5,5))
-# plt.imshow(overlay)
+# plt.figure(figsize=(6, 6))
+# plt.imshow(cv2.cvtColor(overlay, cv2.COLOR_BGRA2RGBA))
+# plt.title("Polar angle convention check")
 # plt.axis('off')
-# plt.title("Faded circular crop (RGBA)")
 # plt.show()
-
-
-# r_outer = CRB_Config.circle_outer_radius
-# r_inner = r_outer - CRB_Config.video_lane_widths[RELEVANT_VIDEO]
-# ts_overlay = draw_spatiotemporal_bins_on_frame(
-#     overlay, frame_bfd_states, frame_homography, bbox, r_inner, r_outer, dr=dy, dtheta=dx, 
-#     alpha=0.25, cmap_name='RdYlGn', vmin=0, vmax=20, value_column='Speed',
-#     smooth_sigma=0.5
-# )
-# plt.figure(figsize=(5,5))
-# plt.imshow(ts_overlay)
-# plt.axis('off')
-# plt.title("BFD Traffic States Overlay")
-# plt.show()
-
-
-# # Add colorbar
-# cbar_overlay = add_colorbar_right(
-#     ts_overlay, cmap_name='RdYlGn', vmin=0, vmax=20, alpha=0.5, label='Speed [km/h]', 
-#     n_ticks=5, tick_format=".0f", width=60, padding=100, font_scale=2.5, font_thickness=2,
-#     tick_color=(0,0,0), tick_length=25, tick_thickness=4, tick_label_offset=10, 
-#     bar_margin_ratio=0.05
-# )
-
-# plt.figure(figsize=(5,5))
-# plt.imshow(cbar_overlay)
-# plt.axis('on')
-# plt.title("Colorbar Overlayed")
-# plt.show()
-
-
-# mean_density = frame_bfd_states['Density'].mean()
-# current_density = frame_bfd_states['Density'].to_numpy()
-# weights1 = frame_bfd_states['Num_Observations'].to_numpy() / MIN_OBS
-# weights2 = current_density / max_density
-# weights = weights1*weights2/np.sum(weights1*weights2)
-# current_density = np.sum(weights*current_density) / np.sum(weights)
-# fd_img_rgba = plot_BFD_operating_point(fd_fig, current_density, highlight_color='blue')
-# overlay_fd = add_BFD_to_right(cbar_overlay, fd_img_rgba, padding=150, bg_color=255)
-
-# # Convert RGBA → BGR (with white background)
-# if overlay_fd.shape[2] == 4:
-#     alpha = overlay_fd[:, :, 3:] / 255.0
-#     rgb = overlay_fd[:, :, :3]
-#     white_bg = np.ones_like(rgb, dtype=np.uint8) * 255
-#     bgr_frame = cv2.cvtColor((rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8), cv2.COLOR_RGB2BGR)
-# else:
-#     bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGB2BGR)
-
-# plt.figure()
-# plt.imshow(overlay_fd)
-# plt.axis('off')
-
-# # cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
-# # cv2.resizeWindow('Cropped Image', 800, 600)
-# # cv2.imshow('Cropped Image', bgr_frame)
-
 # sys.exit(1)
+
+overlay = draw_cyclist_circles_on_frame(
+    rgba_crop, frame_trajectory, frame_homography, bbox, alpha=0.75,
+    circle_radius_m=(1.8+0.5)/2, color=(0, 0, 0), border_thickness=5, 
+    text_color=(0, 0, 0), font_scale=2.25, font_thickness=3
+)
+plt.figure(figsize=(5,5))
+plt.imshow(overlay)
+plt.axis('off')
+plt.title("Faded circular crop (RGBA)")
+plt.show()
+
+
+r_outer = CRB_Config.circle_outer_radius
+r_inner = r_outer - CRB_Config.video_lane_widths[RELEVANT_VIDEO]
+ts_overlay = draw_spatiotemporal_bins_on_frame(
+    overlay, frame_bfd_states, frame_homography, bbox, r_inner, r_outer, dr=dy, dtheta=dx, 
+    alpha=0.25, cmap_name='RdYlGn', vmin=0, vmax=20, value_column='Speed',
+    smooth_sigma=0.5
+)
+plt.figure(figsize=(5,5))
+plt.imshow(ts_overlay)
+plt.axis('off')
+plt.title("BFD Traffic States Overlay")
+plt.show()
+
+
+# Add colorbar
+cbar_overlay = add_colorbar_right(
+    ts_overlay, cmap_name='RdYlGn', vmin=0, vmax=20, alpha=0.5, label='Speed [km/h]', 
+    n_ticks=5, tick_format=".0f", width=60, padding=100, font_scale=2.5, font_thickness=2,
+    tick_color=(0,0,0), tick_length=25, tick_thickness=4, tick_label_offset=10, 
+    bar_margin_ratio=0.05
+)
+
+plt.figure(figsize=(5,5))
+plt.imshow(cbar_overlay)
+plt.axis('on')
+plt.title("Colorbar Overlayed")
+plt.show()
+
+
+mean_density = frame_bfd_states['Density'].mean()
+current_density = frame_bfd_states['Density'].to_numpy()
+weights1 = frame_bfd_states['Num_Observations'].to_numpy() / MIN_OBS
+weights2 = current_density / max_density
+weights = weights1*weights2/np.sum(weights1*weights2)
+current_density = np.sum(weights*current_density) / np.sum(weights)
+fd_img_rgba = plot_BFD_operating_point(fd_fig, current_density, highlight_color='blue')
+overlay_fd = add_BFD_to_right(cbar_overlay, fd_img_rgba, padding=150, bg_color=255)
+
+# Convert RGBA → BGR (with white background)
+if overlay_fd.shape[2] == 4:
+    alpha = overlay_fd[:, :, 3:] / 255.0
+    rgb = overlay_fd[:, :, :3]
+    white_bg = np.ones_like(rgb, dtype=np.uint8) * 255
+    bgr_frame = cv2.cvtColor((rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8), cv2.COLOR_RGB2BGR)
+else:
+    bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGB2BGR)
+
+plt.figure()
+plt.imshow(overlay_fd)
+plt.axis('off')
+
+# cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
+# cv2.resizeWindow('Cropped Image', 800, 600)
+# cv2.imshow('Cropped Image', bgr_frame)
+
+sys.exit(1)
 
 
 # #############################################################################

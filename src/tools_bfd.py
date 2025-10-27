@@ -12,12 +12,15 @@ Submitted to:   JOURNAL
 # IMPORTS
 # #############################################################################
 import sys
+import ast
+
 import numpy as np
 import pandas as pd
 import lmfit as lm
 import matplotlib.pyplot as plt
 
 from dataclasses import dataclass
+from typing import Tuple
 
 from _log_config import logger
 from _constants import CRB_Config
@@ -343,3 +346,116 @@ def _calibrate_FD(Ks, Qs, Vs, FD_form = "ExpFD", loss_fn = "NRMSE", k_jam_est=No
     else:
         raise NotImplementedError()
 
+
+def estimate_traffic_states(orig_pfd_df: pd.DataFrame, trajectory_df: pd.DataFrame,
+                            dx: float, dy: float, dt: float, lane_width: float, 
+                            config: dataclass = CRB_Config, mode: str = "XY") -> Tuple[np.ndarray]:
+    pfd_df = orig_pfd_df.copy()
+    pfd_df['Vehicle_IDs'] = pfd_df['Vehicle_IDs'].apply(lambda x: ast.literal_eval(x))
+    pfd_df['Preceding_ID'] = pfd_df['Vehicle_IDs'].apply(lambda x: x[0])
+    pfd_df['Ego_ID'] = pfd_df['Vehicle_IDs'].apply(lambda x: x[1])
+
+    trajectory_df = trajectory_df.rename(
+        columns={'Vehicle_ID': 'Ego_ID', 'Polar_X': 'Ego_Polar_X', 'Polar_Y': 'Ego_Polar_Y'}
+    )
+    pfd_df = pfd_df.merge(trajectory_df[['Global_Time', 'Ego_ID', 'Ego_Polar_X', 'Ego_Polar_Y']],
+                          on=['Global_Time', 'Ego_ID'], how='left')
+    trajectory_df = trajectory_df.rename(
+        columns={'Ego_ID': 'Preceding_ID', 'Ego_Polar_X': 'Preceding_Polar_X', 'Ego_Polar_Y': 'Preceding_Polar_Y'}
+    )
+    pfd_df = pfd_df.merge(trajectory_df[['Global_Time', 'Preceding_ID', 'Preceding_Polar_X', 'Preceding_Polar_Y']],
+                          on=['Global_Time', 'Preceding_ID'], how='left')
+    
+    pfd_df = pfd_df[['Global_Time', 'Ego_ID', 'Preceding_ID', 'Density', 'Flow', 'Speed',
+                     'Ego_Polar_X', 'Ego_Polar_Y', 'Preceding_Polar_X', 'Preceding_Polar_Y']]
+
+    time_bins = np.arange(pfd_df['Global_Time'].min(), pfd_df['Global_Time'].max()+dt, dt)
+    time_bins = np.round(time_bins, decimals=6)
+    polar_x_bins = np.arange(0, 2*np.pi+dx, dx)
+    tol = 4*dy
+    polar_y_bins = np.arange(config.circle_outer_radius-lane_width-tol, config.circle_outer_radius+dy+tol, dy)
+    bike_size = (1.8 + 0.5, 0.8 + 0.2)
+    pfd_df['Ego_Polar_X'] = pfd_df['Ego_Polar_X'] - 0.5*bike_size[0]/pfd_df['Ego_Polar_Y']
+    pfd_df.loc[pfd_df['Ego_Polar_X'] < 0, 'Ego_Polar_X'] += 2*np.pi
+    pfd_df['Preceding_Polar_X'] = pfd_df['Preceding_Polar_X'] + 0.5*bike_size[0]/pfd_df['Preceding_Polar_Y']
+    pfd_df.loc[pfd_df['Preceding_Polar_X'] > 2*np.pi, 'Preceding_Polar_X'] -= 2*np.pi
+    pfd_df['Ego_Polar_Y'] = pfd_df.apply(lambda row: row['Ego_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']>row['Preceding_Polar_Y'] else row['Ego_Polar_Y']-0.5*bike_size[1], axis=1)
+    pfd_df['Preceding_Polar_Y'] = pfd_df.apply(lambda row: row['Preceding_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']<row['Preceding_Polar_Y'] else row['Preceding_Polar_Y']-0.5*bike_size[1], axis=1)
+    
+    # Binning
+    pfd_df['Time_Bin_Num'] = np.digitize(pfd_df['Global_Time'].to_numpy(), time_bins, right=True)
+    pfd_df['Ego_Polar_X_Bin_Num'] = np.digitize(pfd_df['Ego_Polar_X'].to_numpy(), polar_x_bins, right=True)
+    pfd_df['Ego_Polar_Y_Bin_Num'] = np.digitize(pfd_df['Ego_Polar_Y'].to_numpy(), polar_y_bins, right=True)
+    pfd_df['Preceding_Polar_X_Bin_Num'] = np.digitize(pfd_df['Preceding_Polar_X'].to_numpy(), polar_x_bins, right=True)
+    pfd_df['Preceding_Polar_Y_Bin_Num'] = np.digitize(pfd_df['Preceding_Polar_Y'].to_numpy(), polar_y_bins, right=True)
+
+    pfd_df.loc[pfd_df['Global_Time'] == pfd_df['Global_Time'].min(), 'Time_Bin_Num'] = 1
+    pfd_df['Time_Bin_Num'] = pfd_df['Time_Bin_Num'].apply(lambda x: np.nan if x == 0 or x == len(time_bins) else x)
+    pfd_df['Ego_Polar_X_Bin_Num'] = pfd_df['Ego_Polar_X_Bin_Num'].apply(lambda x: np.nan if x == 0 or x == len(polar_x_bins) else x)
+    pfd_df['Preceding_Polar_X_Bin_Num'] = pfd_df['Preceding_Polar_X_Bin_Num'].apply(lambda x: np.nan if x == 0 or x == len(polar_x_bins) else x)
+    pfd_df['Ego_Polar_Y_Bin_Num'] = pfd_df['Ego_Polar_Y_Bin_Num'].apply(lambda x: np.nan if x == 0 or x == len(polar_y_bins) else x)
+    pfd_df['Preceding_Polar_Y_Bin_Num'] = pfd_df['Preceding_Polar_Y_Bin_Num'].apply(lambda x: np.nan if x == 0 or x == len(polar_y_bins) else x)
+    pfd_df = pfd_df.dropna()
+    pfd_df = pfd_df.astype({
+        'Time_Bin_Num': 'int', 'Ego_Polar_X_Bin_Num': 'int', 'Preceding_Polar_X_Bin_Num': 'int',
+        'Ego_Polar_Y_Bin_Num': 'int', 'Preceding_Polar_Y_Bin_Num': 'int'
+    })
+    
+    # Total Area
+    pfd_df['Tot_Dist_Polar_X'] = pfd_df['Preceding_Polar_X'] - pfd_df['Ego_Polar_X']
+    pfd_df.loc[pfd_df['Tot_Dist_Polar_X'] < 0, 'Tot_Dist_Polar_X'] += 2*np.pi
+    pfd_df['Tot_Dist_Polar_Y'] = abs(pfd_df['Preceding_Polar_Y'] - pfd_df['Ego_Polar_Y'])
+
+    # Get weights for contributions
+    pfd_df['Polar_X_Idxs'] = pfd_df[['Ego_Polar_X_Bin_Num', 'Preceding_Polar_X_Bin_Num']].values.tolist()
+    pfd_df['Polar_X_Idxs'] = pfd_df['Polar_X_Idxs'].apply(lambda x: [(x[0]-1+i) % (len(polar_x_bins)-1) for i in range((x[1]-x[0])%(len(polar_x_bins)-1) + 1)])
+    pfd_df['Polar_Y_Idxs'] = pfd_df[['Ego_Polar_Y_Bin_Num', 'Preceding_Polar_Y_Bin_Num']].values.tolist()
+    pfd_df['Polar_Y_Idxs'] = pfd_df['Polar_Y_Idxs'].apply(lambda x: list(range(min(x[0], x[1])-1, max(x[0], x[1]))))
+
+    pfd_df['W_X_Start'] = pfd_df.apply(lambda row: polar_x_bins[row['Polar_X_Idxs'][0]+1] - row['Ego_Polar_X'] , axis=1)
+    pfd_df['W_X_End'] = pfd_df.apply(lambda row: row['Preceding_Polar_X'] - polar_x_bins[row['Polar_X_Idxs'][-1]] , axis=1)
+    pfd_df['W_X'] = pfd_df.apply(lambda row: [row['W_X_Start']] + [dx]*(len(row['Polar_X_Idxs'])-2) + [row['W_X_End']] if len(row['Polar_X_Idxs']) >= 2 else [row['Tot_Dist_Polar_X']], axis=1)
+    pfd_df = pfd_df.drop(columns=['W_X_Start', 'W_X_End'])
+
+
+    pfd_df['W_Y_Start'] = pfd_df.apply(lambda row: polar_y_bins[row['Polar_Y_Idxs'][0]+1] - min(row['Ego_Polar_Y'], row['Preceding_Polar_Y']) , axis=1)
+    pfd_df['W_Y_End'] = pfd_df.apply(lambda row: max(row['Ego_Polar_Y'], row['Preceding_Polar_Y']) - polar_y_bins[row['Polar_Y_Idxs'][-1]] , axis=1)
+    pfd_df['W_Y'] = pfd_df.apply(lambda row: [row['W_Y_Start']] + [dy]*(len(row['Polar_Y_Idxs'])-2) + [row['W_Y_End']] if len(row['Polar_Y_Idxs']) >= 2 else [row['Tot_Dist_Polar_Y']], axis=1)
+    pfd_df = pfd_df.drop(columns=['W_Y_Start', 'W_Y_End'])
+
+    def fill_weights(row):
+        wx, wy = np.asarray(row['W_X'])/row['Tot_Dist_Polar_X'], np.asarray(row['W_Y'])/row['Tot_Dist_Polar_Y']
+        x_idxs, y_idxs = np.asarray(row['Polar_X_Idxs']), np.asarray(row['Polar_Y_Idxs'])
+        if mode == "XY":
+            XY = np.zeros((len(polar_x_bins)-1, len(polar_y_bins)-1))
+            XY[np.ix_(x_idxs, y_idxs)] = np.outer(wx, wy)
+            return XY
+        if mode == "X":
+            X = np.zeros((len(polar_x_bins)-1,))
+            X[x_idxs] = wx
+            return X
+        if mode == "Y":
+            Y = np.zeros((len(polar_y_bins)-1,))
+            Y[y_idxs] = wy
+            return Y
+
+    pfd_df['W_XY'] = pfd_df.apply(fill_weights, axis=1)
+    pfd_df['Density_W_XY'] = pfd_df['Density'] * pfd_df['W_XY']
+    pfd_df['Flow_W_XY'] = pfd_df['Flow'] * pfd_df['W_XY']
+    pfd_df['Speed_W_XY'] = pfd_df['Speed'] * pfd_df['W_XY']
+    pfd_df['Num_Obs_W_XY'] = pfd_df['W_XY'].apply(lambda x: (100*x != 0).astype(int))
+    grouped = pfd_df.groupby(by='Time_Bin_Num', observed=False).agg(
+        Num_Observations=pd.NamedAgg(column="Num_Obs_W_XY", aggfunc="sum"),
+        Density=pd.NamedAgg(column="Density_W_XY", aggfunc="sum"),
+        Flow=pd.NamedAgg(column="Flow_W_XY", aggfunc="sum"),
+        Speed=pd.NamedAgg(column="Speed_W_XY", aggfunc="sum"),
+    )
+    grouped = grouped.reset_index().dropna()
+    grouped = grouped.sort_values(by='Time_Bin_Num', ascending=True)
+    assert(len(grouped) == len(time_bins)-1)
+    Density_Mat = np.stack(grouped['Density'].to_numpy())
+    Flow_Mat = np.stack(grouped['Flow'].to_numpy())
+    Speed_Mat = np.stack(grouped['Speed'].to_numpy())
+    Num_Observations_Mat = np.stack(grouped['Num_Observations'].to_numpy())
+    return Density_Mat, Flow_Mat, Speed_Mat, Num_Observations_Mat, time_bins, polar_x_bins, polar_y_bins
+    

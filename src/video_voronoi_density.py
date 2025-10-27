@@ -21,11 +21,11 @@ import pathlib
 import numpy as np
 import pandas as pd
 
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-plt.ioff()
+# plt.ioff()
 
 from tqdm import tqdm
 from pedpy import load_trajectory
@@ -350,21 +350,6 @@ def add_colorbar_right(rgba_frame, cmap_name='RdYlGn', vmin=0, vmax=120, alpha=0
     roi = extended[paste_y:paste_y + rh, paste_x:paste_x + rw]
     roi[mask] = rotated_label[mask]
     extended[paste_y:paste_y + rh, paste_x:paste_x + rw] = roi
-    # ensure roi shape matches rotated_label
-    # if roi.shape[0] == rh and roi.shape[1] == rw:
-    #     # copy only masked pixels
-    #     roi[mask] = rotated_label[mask]
-    #     extended[paste_y:paste_y + rh, paste_x:paste_x + rw] = roi
-    # else:
-    #     # fallback: if small mismatch (shouldn't happen), do safe min-crop paste
-    #     h_min = min(roi.shape[0], rh)
-    #     w_min = min(roi.shape[1], rw)
-    #     sub_mask = mask[:h_min, :w_min]
-    #     sub_rot = rotated_label[:h_min, :w_min]
-    #     sub_roi = roi[:h_min, :w_min]
-    #     sub_roi[sub_mask] = sub_rot[sub_mask]
-    #     extended[paste_y:paste_y + h_min, paste_x:paste_x + w_min] = roi
-
     # extended now contains the rotated vertical label centered beside the colorbar
     return extended
 
@@ -503,102 +488,102 @@ plt.close(fd_fig)
 del pfd_df_all_X, tmp_df
 gc.collect()
 
-# # #############################################################################
-# # MAIN: SINGLE FRAME
-# # #############################################################################
-# # FRAME, HOMOGRAPHY
-# success, frame = extractFrameFromVideo(video_file_path, RELEVANT_FRAME)
-# frame_homography = getFrameHomography(df_homography, RELEVANT_FRAME)
-# frame_trajectory = df_final_trajectory[df_final_trajectory['Frame_ID'] == RELEVANT_FRAME].copy()
+# #############################################################################
+# MAIN: SINGLE FRAME
+# #############################################################################
+# FRAME, HOMOGRAPHY
+success, frame = extractFrameFromVideo(video_file_path, RELEVANT_FRAME)
+frame_homography = getFrameHomography(df_homography, RELEVANT_FRAME)
+frame_trajectory = df_final_trajectory[df_final_trajectory['Frame_ID'] == RELEVANT_FRAME].copy()
 
-# frame_individual_joined = individual_joined[individual_joined['frame'] == RELEVANT_FRAME].copy()
-# frame_voronoi_states = []
-# for i in range(len(measurement_areas)):
-#     frame_voronoi_states.append(voronoi_states_areas[i].loc[RELEVANT_FRAME].to_dict())
+frame_individual_joined = individual_joined[individual_joined['frame'] == RELEVANT_FRAME].copy()
+frame_voronoi_states = []
+for i in range(len(measurement_areas)):
+    frame_voronoi_states.append(voronoi_states_areas[i].loc[RELEVANT_FRAME].to_dict())
 
-# # cartesian coordinates of center of track
-# x_c, y_c, r_c = 0, 0, CRB_Config.circle_outer_radius 
-# center_cart = [x_c, y_c]
+# cartesian coordinates of center of track
+x_c, y_c, r_c = 0, 0, CRB_Config.circle_outer_radius 
+center_cart = [x_c, y_c]
 
-# rgba_crop, bbox = make_faded_circular_crop_frame(
-#     frame, center_cart, r_c, frame_homography, fade_alpha=0.5, blur_radius=5
-# )
-# plt.figure(figsize=(5,5))
-# plt.imshow(rgba_crop)
-# plt.axis('off')
-# plt.title("Faded circular crop (RGBA)")
-# plt.show()
+rgba_crop, bbox = make_faded_circular_crop_frame(
+    frame, center_cart, r_c, frame_homography, fade_alpha=0.5, blur_radius=5
+)
+plt.figure(figsize=(5,5))
+plt.imshow(rgba_crop)
+plt.axis('off')
+plt.title("Faded circular crop (RGBA)")
+plt.show()
 
-# overlay_frame = draw_voronoi_polygons_on_frame(
-#     rgba_crop, frame_individual_joined, bbox, drawing_settings['bicycle_colors'], 
-#     alpha=0.15, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=2.25, font_thickness=3,
-#     transparent_polygons=True
-# )
+overlay_frame = draw_voronoi_polygons_on_frame(
+    rgba_crop, frame_individual_joined, bbox, drawing_settings['bicycle_colors'], 
+    alpha=0.15, font=cv2.FONT_HERSHEY_SIMPLEX, font_scale=2.25, font_thickness=3,
+    transparent_polygons=True
+)
     
-# plt.figure(figsize=(5,5))
-# plt.imshow(overlay_frame)
-# plt.axis('off')
-# plt.title("Voronoi Polygons Overlayed on Faded Frame")
-# plt.show()
+plt.figure(figsize=(5,5))
+plt.imshow(overlay_frame)
+plt.axis('off')
+plt.title("Voronoi Polygons Overlayed on Faded Frame")
+plt.show()
 
-# r_inner = CRB_Config.circle_outer_radius - CRB_Config.video_lane_widths[RELEVANT_VIDEO]
-# overlay = draw_colorcoded_measurement_areas(
-#     overlay_frame, measurement_areas, frame_voronoi_states, r_inner, bbox, 
-#     state='speed', vmin=0, vmax=20, cmap_name='RdYlGn', alpha=0.25, gamma=10,
-#     border_color=(0, 0, 0, 255), border_thickness=2
-# )
-# plt.figure(figsize=(5,5))
-# plt.imshow(overlay)
-# plt.axis('off')
-# plt.title("Measurement Areas Overlayed")
-# plt.show()
+r_inner = CRB_Config.circle_outer_radius - CRB_Config.video_lane_widths[RELEVANT_VIDEO]
+overlay = draw_colorcoded_measurement_areas(
+    overlay_frame, measurement_areas, frame_voronoi_states, r_inner, bbox, 
+    state='speed', vmin=0, vmax=20, cmap_name='RdYlGn', alpha=0.25, gamma=10,
+    border_color=(0, 0, 0, 255), border_thickness=2
+)
+plt.figure(figsize=(5,5))
+plt.imshow(overlay)
+plt.axis('off')
+plt.title("Measurement Areas Overlayed")
+plt.show()
 
 
-# # Add colorbar
-# cbar_overlay = add_colorbar_right(
-#     overlay, cmap_name='RdYlGn', vmin=0, vmax=20, alpha=0.5, label='Speed [km/h]', 
-#     n_ticks=5, tick_format=".0f", width=60, padding=100, font_scale=2.5, font_thickness=2,
-#     tick_color=(0,0,0), tick_length=25, tick_thickness=4, tick_label_offset=10, 
-#     bar_margin_ratio=0.05
-# )
+# Add colorbar
+cbar_overlay = add_colorbar_right(
+    overlay, cmap_name='RdYlGn', vmin=0, vmax=20, alpha=0.5, label='Speed [km/h]', 
+    n_ticks=5, tick_format=".0f", width=60, padding=100, font_scale=2.5, font_thickness=2,
+    tick_color=(0,0,0), tick_length=25, tick_thickness=4, tick_label_offset=10, 
+    bar_margin_ratio=0.05
+)
 
-# plt.figure(figsize=(5,5))
-# plt.imshow(cbar_overlay)
-# plt.axis('on')
-# plt.title("Colorbar Overlayed")
-# plt.show()
+plt.figure(figsize=(5,5))
+plt.imshow(cbar_overlay)
+plt.axis('on')
+plt.title("Colorbar Overlayed")
+plt.show()
 
-# current_density = 0
-# weights = 0
-# mean_density = 0
-# for i in range(len(measurement_areas)):
-#     w = frame_voronoi_states[i]['density'] / max_density
-#     current_density += w*frame_voronoi_states[i]['density']
-#     mean_density += frame_voronoi_states[i]['density']
-#     weights += w
-# current_density /= weights
-# mean_density /= len(measurement_areas)
-# fd_img_rgba = plot_BFD_operating_point(fd_fig, current_density, highlight_color='blue')
-# overlay_fd = add_BFD_to_right(cbar_overlay, fd_img_rgba, padding=150, bg_color=255)
+current_density = 0
+weights = 0
+mean_density = 0
+for i in range(len(measurement_areas)):
+    w = frame_voronoi_states[i]['density'] / max_density
+    current_density += w*frame_voronoi_states[i]['density']
+    mean_density += frame_voronoi_states[i]['density']
+    weights += w
+current_density /= weights
+mean_density /= len(measurement_areas)
+fd_img_rgba = plot_BFD_operating_point(fd_fig, current_density, highlight_color='blue')
+overlay_fd = add_BFD_to_right(cbar_overlay, fd_img_rgba, padding=150, bg_color=255)
 
-# # Convert RGBA → BGR (with white background)
-# if overlay_fd.shape[2] == 4:
-#     alpha = overlay_fd[:, :, 3:] / 255.0
-#     rgb = overlay_fd[:, :, :3]
-#     white_bg = np.ones_like(rgb, dtype=np.uint8) * 255
-#     bgr_frame = cv2.cvtColor((rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8), cv2.COLOR_RGB2BGR)
-# else:
-#     bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGB2BGR)
+# Convert RGBA → BGR (with white background)
+if overlay_fd.shape[2] == 4:
+    alpha = overlay_fd[:, :, 3:] / 255.0
+    rgb = overlay_fd[:, :, :3]
+    white_bg = np.ones_like(rgb, dtype=np.uint8) * 255
+    bgr_frame = cv2.cvtColor((rgb * alpha + white_bg * (1 - alpha)).astype(np.uint8), cv2.COLOR_RGB2BGR)
+else:
+    bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGB2BGR)
 
-# plt.figure()
-# plt.imshow(overlay_fd)
-# plt.axis('off')
+plt.figure()
+plt.imshow(overlay_fd)
+plt.axis('off')
 
-# cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
-# cv2.resizeWindow('Cropped Image', 800, 600)
-# cv2.imshow('Cropped Image', bgr_frame)
+cv2.namedWindow('Cropped Image', cv2.WINDOW_NORMAL)
+cv2.resizeWindow('Cropped Image', 800, 600)
+cv2.imshow('Cropped Image', bgr_frame)
 
-# sys.exit(1)
+sys.exit(1)
 
 
 # #############################################################################
@@ -612,6 +597,7 @@ os.makedirs(temp_dir, exist_ok=True)
 fps = CRB_Config.sampling_freq  # set your video frame rate
 frame_size = None  # will infer after first frame
 
+sys.exit(1)
 # --- MAIN LOOP ---
 for frame_nr in tqdm(range(RELEVANT_FRAME_FROM, RELEVANT_FRAME_TO+1), total=RELEVANT_FRAME_TO-RELEVANT_FRAME_FROM+1, desc="Rendering video"):
     # Step 1: Load Frame Annotations
@@ -665,13 +651,7 @@ for frame_nr in tqdm(range(RELEVANT_FRAME_FROM, RELEVANT_FRAME_TO+1), total=RELE
     current_density /= weights
     fd_img_rgba = plot_BFD_operating_point(fd_fig, current_density, highlight_color='blue')
     overlay_fd = add_BFD_to_right(cbar_overlay, fd_img_rgba, padding=150, bg_color=255)
-
-    # Step 7: Convert RGBA → BGR (for OpenCV video output)
-    # if overlay_fd.shape[2] == 4:
-    #     bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGBA2BGR)
-    # else:
-    #     bgr_frame = cv2.cvtColor(overlay_fd, cv2.COLOR_RGB2BGR)
-    
+   
     # Step 7: Convert RGBA → BGR (with white background)
     if overlay_fd.shape[2] == 4:
         alpha = overlay_fd[:, :, 3:] / 255.0
@@ -692,18 +672,30 @@ for frame_nr in tqdm(range(RELEVANT_FRAME_FROM, RELEVANT_FRAME_TO+1), total=RELE
 
 
 # --- CREATE VIDEO FROM SAVED FRAMES ---
+frame_size = (4160, 2157)
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 writer = cv2.VideoWriter(output_video_path, fourcc, fps, frame_size)
 
+if not writer.isOpened():
+    print("❌ VideoWriter failed to open!")
+
 frame_files = sorted(os.listdir(temp_dir))
+print("Found", len(frame_files), "frames.")
 for fname in tqdm(frame_files, desc="Encoding video"):
     frame = cv2.imread(os.path.join(temp_dir, fname))
+    if frame is None:
+        print("⚠️ Skipping unreadable frame:", fname)
+        sys.exit(1)
+    if (frame.shape[1], frame.shape[0]) != frame_size:
+        # print("⚠️ Resizing:", fname)
+        frame = cv2.resize(frame, frame_size)
     writer.write(frame)
 
 writer.release()
+cv2.destroyAllWindows()
 print(f"\n✅ Video saved to: {output_video_path}")
 
-# --- OPTIONAL: CLEAN UP TEMP FILES ---
-import shutil
-shutil.rmtree(temp_dir)
-print("🧹 Temporary frames deleted.")
+# # --- OPTIONAL: CLEAN UP TEMP FILES ---
+# import shutil
+# shutil.rmtree(temp_dir)
+# print("🧹 Temporary frames deleted.")
