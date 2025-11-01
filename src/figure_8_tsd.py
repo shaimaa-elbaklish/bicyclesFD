@@ -46,7 +46,7 @@ np.random.seed(seed_value)
 video = CRB_Config.videos[-2]
 part = CRB_Config.video_parts_X[video][1]
 
-dx, dy, dt = 20*np.pi/180, 0.75, 0.25
+dx, dy, dt = 10*np.pi/180, 0.25, 0.25
 
 MIN_OBS = 5
 
@@ -65,6 +65,9 @@ Density_Mat, Flow_Mat, Speed_Mat, Num_Observations_Mat, time_bins, polar_x_bins,
     pfd_df, trajectory_df, dx, dy, dt, CRB_Config.video_lane_widths[video], 
     config=CRB_Config, mode="X"
 )
+Density_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
+Flow_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
+Speed_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
 
 jet = plt.cm.jet
 colors = [jet(x) for x in np.linspace(1, 0.5, 256)]
@@ -81,7 +84,7 @@ ax.set_xticks(time_ticks)
 ax.set_xticklabels(np.round(time_ticks, 1), rotation=0)
 ax.set_xlabel('Time [s]')
 ax.xaxis.set_ticks_position('bottom')
-ax.invert_yaxis()
+# ax.invert_yaxis()
 plt.colorbar(sc, ax=ax, pad=0.04).set_label('Speed [km/h]', rotation=90)
 fig.tight_layout()
 
@@ -91,7 +94,9 @@ Density_Mat, Flow_Mat, Speed_Mat, Num_Observations_Mat, time_bins, polar_x_bins,
     pfd_df, trajectory_df, dx, dy, dt, CRB_Config.video_lane_widths[video], 
     config=CRB_Config, mode="Y"
 )
-
+Density_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
+Flow_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
+Speed_Mat[Num_Observations_Mat < MIN_OBS] = np.nan
 
 space_y_ticks = np.linspace(CRB_Config.circle_outer_radius-CRB_Config.video_lane_widths[video], CRB_Config.circle_outer_radius, 6)
 
@@ -99,7 +104,7 @@ fig, ax = plt.subplots(figsize=(4, 4))
 sc = ax.pcolormesh(time_bins, polar_y_bins, Speed_Mat.T, shading='auto', cmap=cmap, vmin=0, vmax=15)
 ax.set_yticks(space_y_ticks)
 ax.set_yticklabels(np.round(space_y_ticks, 2))
-ax.set_ylabel('Polar X Position [rad]')
+ax.set_ylabel('Polar Y Position [m]')
 ax.set_xticks(time_ticks)
 ax.set_xticklabels(np.round(time_ticks, 1), rotation=0)
 ax.set_xlabel('Time [s]')

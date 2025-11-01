@@ -23,7 +23,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # CONSTANT for BFD
-USE_HEADWAY_HOOGENDOORN = True
+USE_HEADWAY_HOOGENDOORN = False
 from _log_config import create_log_file
 if USE_HEADWAY_HOOGENDOORN:
     create_log_file(logfile = "../logs/CRB_FD_Analysis_Hoogendoorn.log")
@@ -49,6 +49,7 @@ random.seed(seed_value)
 np.random.seed(seed_value)
 
 # for aggregation
+DELTA = 0.3
 MIN_OBS = 50
 
 # #############################################################################
@@ -104,12 +105,12 @@ if USE_HEADWAY_HOOGENDOORN:
 else:
     tmp_df = pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)]
     tmp_df['v_Vel'] = tmp_df['Space_Hdwy'] / tmp_df['Time_Hdwy']
-    tmp_df = tmp_df[(tmp_df['v_Vel'] - 0.1).abs() <= 1e-02]
+    tmp_df = tmp_df[tmp_df['v_Vel'].abs() <= 0.1]
     jam_density_est = 1000/tmp_df['Space_Hdwy'].median() / 2.5
 
 logger.info("BFD (i.e. Proposed Method)")
 _, fig = aggregate_fd(pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)], 
-                      max_density=200, bin_width=0.3, min_observations=MIN_OBS, 
+                      max_density=200, bin_width=DELTA, min_observations=MIN_OBS, 
                       FD_form="ExpFD", loss_fn="HuberLoss", 
                       show_pseudo_states=False, log_results=True)
 if USE_HEADWAY_HOOGENDOORN:
@@ -120,16 +121,17 @@ fig.suptitle("[BFD] Videos with Lane Width = 2.5 m - Exponential FD")
 fig.tight_layout()
 # plt.close(fig)
 _, fig = aggregate_fd(pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)], 
-                      max_density=200, bin_width=0.3, min_observations=MIN_OBS, 
+                      max_density=200, bin_width=DELTA, min_observations=MIN_OBS, 
                       FD_form="WuFD", loss_fn="HuberLoss", 
-                      show_pseudo_states=False, log_results=True, jam_density=jam_density_est)
+                      show_pseudo_states=False, log_results=True,
+                      jam_density=jam_density_est, k_cong_ratio=0.85)
 if USE_HEADWAY_HOOGENDOORN:
     fig.savefig("../figures/BFD_Hoogendoorn_WuFD_LaneWidth_2p5.pdf", dpi=300, bbox_inches='tight')
 else:
     fig.savefig("../figures/BFD_WuFD_LaneWidth_2p5.pdf", dpi=300, bbox_inches='tight')
 fig.suptitle("[BFD] Videos with Lane Width = 2.5 m - Wu's FD")
 fig.tight_layout()
-# fig.savefig("../figures/BFD_WuFD_LaneWidth_2p5.png", dpi=300, bbox_inches='tight')
+fig.savefig("../figures/BFD_WuFD_LaneWidth_2p5.png", dpi=300, bbox_inches='tight')
 # plt.close(fig)
 
 
@@ -142,12 +144,12 @@ if USE_HEADWAY_HOOGENDOORN:
 else:
     tmp_df = pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)]
     tmp_df['v_Vel'] = tmp_df['Space_Hdwy'] / tmp_df['Time_Hdwy']
-    tmp_df = tmp_df[(tmp_df['v_Vel'] - 0.1).abs() <= 1e-02]
+    tmp_df = tmp_df[tmp_df['v_Vel'].abs() <= 0.1]
     jam_density_est = 1000/tmp_df['Space_Hdwy'].median() / 3.75
 
 logger.info("BFD (i.e. Proposed Method)")
 _, fig = aggregate_fd(pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)], 
-                      max_density=200, bin_width=0.3, min_observations=MIN_OBS, 
+                      max_density=200, bin_width=DELTA, min_observations=MIN_OBS, 
                       FD_form="ExpFD", loss_fn="HuberLoss", 
                       show_pseudo_states=False, log_results=True)
 if USE_HEADWAY_HOOGENDOORN:
@@ -158,16 +160,17 @@ fig.suptitle("[BFD] Videos with Lane Width = 3.75 m - Exponential FD")
 fig.tight_layout()
 # plt.close(fig)
 _, fig = aggregate_fd(pfd_df_all_X[pfd_df_all_X['Video'].isin(video_set)], 
-                      max_density=500, bin_width=0.3, min_observations=MIN_OBS, 
+                      max_density=500, bin_width=DELTA, min_observations=MIN_OBS, 
                       FD_form="WuFD", loss_fn="HuberLoss", 
-                      show_pseudo_states=False, log_results=True, jam_density=jam_density_est)
+                      show_pseudo_states=False, log_results=True, 
+                      jam_density=jam_density_est, k_cong_ratio=0.85)
 if USE_HEADWAY_HOOGENDOORN:
     fig.savefig("../figures/BFD_Hoogendoorn_WuFD_LaneWidth_3p75.pdf", dpi=300, bbox_inches='tight')
 else:
     fig.savefig("../figures/BFD_WuFD_LaneWidth_3p75.pdf", dpi=300, bbox_inches='tight')
 fig.suptitle("[BFD] Videos with Lane Width = 3.75 m - Wu's FD")
 fig.tight_layout()
-# fig.savefig("../figures/BFD_WuFD_LaneWidth_3p75.png", dpi=300, bbox_inches='tight')
+fig.savefig("../figures/BFD_WuFD_LaneWidth_3p75.png", dpi=300, bbox_inches='tight')
 # plt.close(fig)
 
 plt.show()

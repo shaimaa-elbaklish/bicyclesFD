@@ -67,7 +67,7 @@ ts_df_all = pd.read_csv("../data/CRB_Voronoi_PseudoTrafficStates_ALLVideos.txt")
 # # mean=0.7796, median=0.5660
 # plt.legend(['2.5m', '3.75m'])
 
-video_set = CRB_Config.videos[:-3]
+video_set = CRB_Config.videos[-3:]
 bin_width = 0.3
 pfd_df_all = pfd_df_all[pfd_df_all['Video'].isin(video_set)]
 pfd_df_all['Density_Bin'] = pd.cut(pfd_df_all['Density'], bins=np.arange(0, 200.0, bin_width))
@@ -113,16 +113,16 @@ ts_df_agg = ts_df_agg[ts_df_agg['Num_Observations'] >= 50]
 
 fig, axs = plt.subplots(1, 2, figsize=(8, 4))
 axs[0].scatter(ts_df_agg['Density'], ts_df_agg['Flow'], label='Voronoi', alpha=0.5)
-axs[0].scatter(pfd_df_agg['Density'], pfd_df_agg['Flow'], label='BFD, Proposed', alpha=0.5)
-axs[0].scatter(pfd_df_Hoogendoorn_agg['Density'], pfd_df_Hoogendoorn_agg['Flow'], label='BFD, Hoogendoorn', alpha=0.25)
+axs[0].scatter(pfd_df_agg['Density'], pfd_df_agg['Flow'], label='BFD, $\Delta x^P_{max} = 60\deg$ (Proposed)', alpha=0.5)
+axs[0].scatter(pfd_df_Hoogendoorn_agg['Density'], pfd_df_Hoogendoorn_agg['Flow'], label='BFD, $\Delta x^P_{max} = 360\deg$', alpha=0.25)
 axs[0].set_ylim([0, 2000])
 axs[0].set_xlim([0, 200])
 axs[0].set_xlabel("Density [bic/km/m]")
 axs[0].set_ylabel("Flow [bic/h/m]")
 
 axs[1].scatter(ts_df_agg['Density'], ts_df_agg['Speed'], label='Voronoi', alpha=0.5)
-axs[1].scatter(pfd_df_agg['Density'], pfd_df_agg['Speed'], label='BFD, Proposed', alpha=0.5)
-axs[1].scatter(pfd_df_Hoogendoorn_agg['Density'], pfd_df_Hoogendoorn_agg['Speed'], label='BFD, Hoogendoorn', alpha=0.25)
+axs[1].scatter(pfd_df_agg['Density'], pfd_df_agg['Speed'], label='BFD, $\Delta x^P_{max} = 60\deg$ (Proposed)', alpha=0.5)
+axs[1].scatter(pfd_df_Hoogendoorn_agg['Density'], pfd_df_Hoogendoorn_agg['Speed'], label='BFD, $\Delta x^P_{max} = 360\deg$', alpha=0.25)
 axs[1].set_ylim([0, 20])
 axs[1].set_xlim([0, 200])
 axs[1].set_xlabel("Density [bic/km/m]")
@@ -130,10 +130,10 @@ axs[1].set_ylabel("Speed [km/h]")
 
 
 h, l = axs[0].get_legend_handles_labels()
-fig.legend(h, l, bbox_to_anchor=(0.5, -0.05), loc='lower center', ncol=3, bbox_transform=fig.transFigure)
+fig.legend(h, l, bbox_to_anchor=(0.5, -0.07), loc='lower center', ncol=3, bbox_transform=fig.transFigure)
 fig.tight_layout()
-fig.savefig("../figures/BFD_Hoogendoorn_Voronoi_Comparison_LaneWidth_2p5.pdf", dpi=300, bbox_inches='tight')
-# fig.savefig("../figures/BFD_Hoogendoorn_Voronoi_Comparison_LaneWidth_3p75.pdf", dpi=300, bbox_inches='tight')
+# fig.savefig("../figures/BFD_Hoogendoorn_Voronoi_Comparison_LaneWidth_2p5.pdf", dpi=300, bbox_inches='tight')
+fig.savefig("../figures/BFD_Hoogendoorn_Voronoi_Comparison_LaneWidth_3p75.pdf", dpi=300, bbox_inches='tight')
 
 sys.exit(1)
 

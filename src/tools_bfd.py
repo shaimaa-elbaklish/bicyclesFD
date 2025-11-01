@@ -99,7 +99,8 @@ def compute_pseudo_states_pfd_N2(df: pd.DataFrame, lane_width: float,
 def aggregate_fd(ts_df: pd.DataFrame, max_density: float, bin_width: float, 
                   min_observations: int = 10, FD_form: str = "ExpFD", 
                   loss_fn: str = "NRMSE", jam_density: float = None, 
-                  show_pseudo_states: bool = True, log_results: bool = False):
+                  show_pseudo_states: bool = True, log_results: bool = False,
+                  k_cong_ratio: float = 0.85):
     """
     This function aggregates the pseudo-traffic states within a given density
     bin width and calibrates a functional form to the aggregated states. 
@@ -195,7 +196,7 @@ def aggregate_fd(ts_df: pd.DataFrame, max_density: float, bin_width: float,
         Ks = agg_df["Density"].to_numpy().astype(np.float32)
         Qs = agg_df["Flow"].to_numpy().astype(np.float32)
         Vs = agg_df["Speed"].to_numpy().astype(np.float32)
-        res = _calibrate_FD(Ks=Ks, Qs=Qs, Vs=Vs, FD_form='WuFreeFD', loss_fn=loss_fn, log_results=log_results)
+        res = _calibrate_FD(Ks=Ks, Qs=Qs, Vs=Vs, FD_form='WuFreeFD', loss_fn=loss_fn, log_results=log_results, k_jam_est=jam_density)
         k_FD, q_FD, v_FD = res[0], res[1], res[2]
         # WuFreeFD returns: K_test, Q_pred_free, V_pred_free, vf, v_crit, delta, k_crit
         k_crit = res[-1]
@@ -206,12 +207,12 @@ def aggregate_fd(ts_df: pd.DataFrame, max_density: float, bin_width: float,
         
         if jam_density is None:
             jam_density = k_crit * np.power(res[-4]/(res[-4]-res[-3]), 1/res[-2]) # np.power(vf/(vf-v_cr), 1/delta) * k_crit
-        cong_idxs = (Ks >= k_crit*0.5) & (Qs <= Q_cap)
+        cong_idxs = (Ks >= k_crit*k_cong_ratio) & (Qs <= Q_cap)
         res = _calibrate_FD(Ks=Ks[cong_idxs], Qs=Qs[cong_idxs], Vs=Vs[cong_idxs], FD_form='WuCongFD', loss_fn=loss_fn, log_results=log_results, k_jam_est=jam_density)
         # WuCongFD returns: K_test, Q_pred_cong, V_pred_cong, k_jam, w
         k_FD, q_FD, v_FD = res[0], res[1], res[2]
-        axs[0].plot(k_FD[k_FD >= k_crit*0.5], q_FD[k_FD >= k_crit*0.5], label="k-q Congested FD", linestyle="dashed", color="red")
-        axs[1].plot(k_FD[k_FD >= k_crit*0.5], v_FD[k_FD >= k_crit*0.5], label="k-v Congested FD", linestyle="dashed", color="red")
+        axs[0].plot(k_FD[k_FD >= k_crit*k_cong_ratio], q_FD[k_FD >= k_crit*k_cong_ratio], label="k-q Congested FD", linestyle="dashed", color="red")
+        axs[1].plot(k_FD[k_FD >= k_crit*k_cong_ratio], v_FD[k_FD >= k_crit*k_cong_ratio], label="k-v Congested FD", linestyle="dashed", color="red")
     
     # axs[0].legend(loc='upper right')
     # axs[1].legend(loc='upper right')
@@ -294,12 +295,20 @@ def _calibrate_FD(Ks, Qs, Vs, FD_form = "ExpFD", loss_fn = "NRMSE", k_jam_est=No
             k_crit = {'value': 100, 'min': 1e-05, 'max': 120}
         )
     elif FD_form == "WuFreeFD":
-        params = lm.create_params(
-            vf = {'value': 2, 'min': 1e-05, 'max': 20},
-            delta = {'value': 0.5, 'min': 1e-05, 'max': 10},
-            k_crit = {'value': 100, 'min': 50.0, 'max': 120},
-            v_crit = {'value': 2, 'min': 1e-05, 'max': 20},
-        )
+        if k_jam_est is None:
+            params = lm.create_params(
+                vf = {'value': 2, 'min': 1e-05, 'max': 20},
+                delta = {'value': 0.5, 'min': 1e-05, 'max': 10},
+                k_crit = {'value': 70, 'min': 50.0, 'max': 120},
+                v_crit = {'value': 2, 'min': 1e-05, 'max': 20},
+            )
+        else:
+            params = lm.create_params(
+                vf = {'value': 2, 'min': 1e-05, 'max': 20},
+                delta = {'value': 0.5, 'min': 1e-05, 'max': 10},
+                k_crit = {'value': 70, 'min': 50.0, 'max': min(120, k_jam_est-10)},
+                v_crit = {'value': 2, 'min': 1e-05, 'max': 20},
+            )
     elif FD_form == "WuCongFD":
         if k_jam_est is None:
             params = lm.create_params(
@@ -374,13 +383,19 @@ def estimate_traffic_states(orig_pfd_df: pd.DataFrame, trajectory_df: pd.DataFra
     polar_x_bins = np.arange(0, 2*np.pi+dx, dx)
     tol = 4*dy
     polar_y_bins = np.arange(config.circle_outer_radius-lane_width-tol, config.circle_outer_radius+dy+tol, dy)
-    bike_size = (1.8 + 0.5, 0.8 + 0.2)
+    bike_size = (1.8 + 1.0, 0.8 + 0.2)
+    
     pfd_df['Ego_Polar_X'] = pfd_df['Ego_Polar_X'] - 0.5*bike_size[0]/pfd_df['Ego_Polar_Y']
     pfd_df.loc[pfd_df['Ego_Polar_X'] < 0, 'Ego_Polar_X'] += 2*np.pi
-    pfd_df['Preceding_Polar_X'] = pfd_df['Preceding_Polar_X'] + 0.5*bike_size[0]/pfd_df['Preceding_Polar_Y']
+    pfd_df['Preceding_Polar_X'] = pfd_df['Ego_Polar_X'] + bike_size[0]/pfd_df['Ego_Polar_Y']
     pfd_df.loc[pfd_df['Preceding_Polar_X'] > 2*np.pi, 'Preceding_Polar_X'] -= 2*np.pi
-    pfd_df['Ego_Polar_Y'] = pfd_df.apply(lambda row: row['Ego_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']>row['Preceding_Polar_Y'] else row['Ego_Polar_Y']-0.5*bike_size[1], axis=1)
-    pfd_df['Preceding_Polar_Y'] = pfd_df.apply(lambda row: row['Preceding_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']<row['Preceding_Polar_Y'] else row['Preceding_Polar_Y']-0.5*bike_size[1], axis=1)
+    # pfd_df['Preceding_Polar_X'] = pfd_df['Preceding_Polar_X'] + 0.5*bike_size[0]/pfd_df['Preceding_Polar_Y']
+    # pfd_df.loc[pfd_df['Preceding_Polar_X'] > 2*np.pi, 'Preceding_Polar_X'] -= 2*np.pi
+    
+    pfd_df['Ego_Polar_Y'] = pfd_df['Ego_Polar_Y'] - 0.5*bike_size[1]
+    pfd_df['Preceding_Polar_Y'] = pfd_df['Ego_Polar_Y'] + bike_size[1]
+    # pfd_df['Ego_Polar_Y'] = pfd_df.apply(lambda row: row['Ego_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']>row['Preceding_Polar_Y'] else row['Ego_Polar_Y']-0.5*bike_size[1], axis=1)
+    # pfd_df['Preceding_Polar_Y'] = pfd_df.apply(lambda row: row['Preceding_Polar_Y']+0.5*bike_size[1] if row['Ego_Polar_Y']<row['Preceding_Polar_Y'] else row['Preceding_Polar_Y']-0.5*bike_size[1], axis=1)
     
     # Binning
     pfd_df['Time_Bin_Num'] = np.digitize(pfd_df['Global_Time'].to_numpy(), time_bins, right=True)
@@ -405,7 +420,8 @@ def estimate_traffic_states(orig_pfd_df: pd.DataFrame, trajectory_df: pd.DataFra
     pfd_df['Tot_Dist_Polar_X'] = pfd_df['Preceding_Polar_X'] - pfd_df['Ego_Polar_X']
     pfd_df.loc[pfd_df['Tot_Dist_Polar_X'] < 0, 'Tot_Dist_Polar_X'] += 2*np.pi
     pfd_df['Tot_Dist_Polar_Y'] = abs(pfd_df['Preceding_Polar_Y'] - pfd_df['Ego_Polar_Y'])
-
+    # pfd_df = pfd_df[pfd_df['Tot_Dist_Polar_X'] <= 60*np.pi/180]
+    
     # Get weights for contributions
     pfd_df['Polar_X_Idxs'] = pfd_df[['Ego_Polar_X_Bin_Num', 'Preceding_Polar_X_Bin_Num']].values.tolist()
     pfd_df['Polar_X_Idxs'] = pfd_df['Polar_X_Idxs'].apply(lambda x: [(x[0]-1+i) % (len(polar_x_bins)-1) for i in range((x[1]-x[0])%(len(polar_x_bins)-1) + 1)])

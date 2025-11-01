@@ -149,5 +149,19 @@ class NGSIM_Config:
                                   "NGSIM_Peachtree_Vehicle_Trajectories.csv")
     sampling_freq: float = 10.0
     
+    
+# #############################################################################
+# CONSTANTS: ARED dataset
+# #############################################################################
+@dataclass
+class ARED_Config:
+    data_root: str = "C:/Users/ShaimaaElBaklish/polybox/Datasets/ARED"
+    traj_filenames: Tuple[str] = (
+        "expA.csv", "expB.csv", "expC.csv", "expD.csv", "expE.csv",
+        "expF.csv", "expG.csv", "expH.csv", 
+    ) 
+    sampling_freq: float = 30.0
+    track_circumference: float = 260.0
+    
 
 

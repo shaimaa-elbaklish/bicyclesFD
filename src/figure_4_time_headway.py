@@ -193,11 +193,11 @@ def plot_history(history):
 #       Comparing Methods
 # #############################################################################
 files = [
-    ('Proposed-30deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max30deg.npy','Time_Headway_Survival_Function_Proposed_30deg'),
-    ('Proposed-60deg', '../data/CRB_Time_Headways_ALLVideos_V2.npy', 'Time_Headway_Survival_Function_Proposed_60deg'),
-    ('Proposed-90deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max90deg.npy', 'Time_Headway_Survival_Function_Proposed_90deg'),
-    ('Proposed-120deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max120deg.npy', 'Time_Headway_Survival_Function_Proposed_120deg'),
-    ('Hoogendoorn', '../data/CRB_Time_Headways_Hoogendoorn_ALLVideos_V2.npy', 'Time_Headway_Survival_Function_Hoogendoorn')
+    ('Limited Visibility-30deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max30deg.npy','Time_Headway_Survival_Function_Proposed_30deg'),
+    ('Limited Visibility-60deg', '../data/CRB_Time_Headways_ALLVideos_V2.npy', 'Time_Headway_Survival_Function_Proposed_60deg'),
+    ('Limited Visibility-90deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max90deg.npy', 'Time_Headway_Survival_Function_Proposed_90deg'),
+    ('Limited Visibility-120deg', '../data/CRB_Time_Headways_ALLVideos_V2_Max120deg.npy', 'Time_Headway_Survival_Function_Proposed_120deg'),
+    ('Full Visibility-360deg', '../data/CRB_Time_Headways_Hoogendoorn_ALLVideos_V2.npy', 'Time_Headway_Survival_Function_Hoogendoorn')
 ]
 Hmax, dh = 50.0, 0.05
 h = np.arange(0.0, Hmax+dh, dh)
@@ -328,7 +328,7 @@ for (label, path, save_name) in files:
         axsame[0].plot(h, g1_final/phi_final, label=f'{label}', alpha=0.6, linestyle='--')
         axsame[1].plot(h, r1_final/(1-phi_final), label=f'{label}', alpha=0.6, linestyle='--')
     else:
-        axsame[0].plot(h, g1_final/phi_final, label=f'${label}', alpha=0.6)
+        axsame[0].plot(h, g1_final/phi_final, label=f'{label}', alpha=0.6)
         axsame[1].plot(h, r1_final/(1-phi_final), label=f'{label}', alpha=0.6)
 
 

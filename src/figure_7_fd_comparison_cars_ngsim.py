@@ -93,40 +93,6 @@ def aggregate_FD(ts_df, max_density=180.0, bin_width=0.3, min_observations=15):
     agg_df = agg_df[agg_df["Num_Observations"] >= min_observations]
     return agg_df
 
-# #############################################################################
-# MAIN: Process SRF Dataset
-# #############################################################################
-pfd_df_all = None
-for video in SRF_Config.videos_outer:
-    df = pd.read_csv(SRF_Config.data_root + video + "_norelax.txt", sep=",")
-    df = df.rename(columns={'Proceeding': 'Preceding'})
-    pfd_df = compute_pseudo_states_pfd_N2(df)
-    if pfd_df_all is None:
-        pfd_df_all = pfd_df.copy()
-    else:
-        pfd_df_all = pd.concat((pfd_df_all, pfd_df), ignore_index=True)
-del pfd_df
-
-car_agg_df_outer = aggregate_FD(pfd_df_all, max_density=180.0, bin_width=0.3, min_observations=15)
-# plt.figure()
-# plt.scatter(car_agg_df_outer['Density'], car_agg_df_outer['Flow'])
-# plt.tight_layout()
-
-pfd_df_all = None
-for video in SRF_Config.videos_inner:
-    df = pd.read_csv(SRF_Config.data_root + video + "_norelax.txt", sep=",")
-    df = df.rename(columns={'Proceeding': 'Preceding'})
-    pfd_df = compute_pseudo_states_pfd_N2(df)
-    if pfd_df_all is None:
-        pfd_df_all = pfd_df.copy()
-    else:
-        pfd_df_all = pd.concat((pfd_df_all, pfd_df), ignore_index=True)
-del pfd_df
-
-car_agg_df_inner = aggregate_FD(pfd_df_all, max_density=180.0, bin_width=0.3, min_observations=25)
-# plt.figure()
-# plt.scatter(car_agg_df_inner['Density'], car_agg_df_inner['Flow'])
-# plt.tight_layout()
 
 # #############################################################################
 # MAIN: Load CRB dataset
@@ -149,40 +115,8 @@ bike_agg_df_outer = aggregate_FD(pfd_df_all_bikes[pfd_df_all_bikes['Video'].isin
 bike_agg_df_inner = aggregate_FD(pfd_df_all_bikes[pfd_df_all_bikes['Video'].isin(CRB_Config.videos[-3:])], 
                    max_density=400.0, bin_width=0.3, min_observations=50)
 
-# #############################################################################
-# MAIN: Compare FDs: Original
-# #############################################################################
-fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-axs[0].scatter(bike_agg_df_outer['Density'], bike_agg_df_outer['Flow'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[0].scatter(bike_agg_df_inner['Density'], bike_agg_df_inner['Flow'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[0].scatter(car_agg_df_inner['Density'], car_agg_df_inner['Flow'], label='Cars', alpha=0.5)
-axs[0].set_xlabel('Density [km$^{-1}$]')
-axs[0].set_ylabel('Flow [h$^{-1}$]$')
-# axs[0].legend()
-axs[0].set_ylim([0, 6000])
 
-axs[1].scatter(bike_agg_df_outer['Density'], bike_agg_df_outer['Speed'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[1].scatter(bike_agg_df_inner['Density'], bike_agg_df_inner['Speed'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[1].scatter(car_agg_df_inner['Density'], car_agg_df_inner['Speed'], label='Cars', alpha=0.5)
-axs[1].set_xlabel('Density [km$^{-1}$]')
-axs[1].set_ylabel('Speed [km/h]')
-# axs[1].legend()
-axs[1].set_ylim([0, 30])
-
-h, l = axs[0].get_legend_handles_labels()
-fig.legend(h, l, bbox_to_anchor=(0.5, 1.08), loc='upper center', ncol=3, bbox_transform=fig.transFigure)
-fig.tight_layout()
-fig.savefig('../figures/BFD_CarsComparison_Original.pdf', dpi=300, bbox_inches='tight')
-
-# #############################################################################
-# MAIN: Compare FDs: Space Utility Perspective
-# #############################################################################
-v0_car, d0_car = 20.0, (4.5 + 2)/1000.0
 v0_bike, d0_bike = 12.0, (1.8 + 1)/1000.0
-
-car_agg_df_inner['Density_Scaled'] = car_agg_df_inner['Density'] * d0_car
-car_agg_df_inner['Flow_Scaled'] = car_agg_df_inner['Flow'] * d0_car / v0_car
-car_agg_df_inner['Speed_Scaled'] = car_agg_df_inner['Speed'] / v0_car
 
 bike_agg_df_outer['Density_Scaled'] = bike_agg_df_outer['Density'] * d0_bike
 bike_agg_df_outer['Flow_Scaled'] = bike_agg_df_outer['Flow'] * d0_bike / v0_bike
@@ -191,110 +125,6 @@ bike_agg_df_outer['Speed_Scaled'] = bike_agg_df_outer['Speed'] / v0_bike
 bike_agg_df_inner['Density_Scaled'] = bike_agg_df_inner['Density'] * d0_bike
 bike_agg_df_inner['Flow_Scaled'] = bike_agg_df_inner['Flow'] * d0_bike / v0_bike
 bike_agg_df_inner['Speed_Scaled'] = bike_agg_df_inner['Speed'] / v0_bike
-
-
-fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-axs[0].scatter(bike_agg_df_outer['Density_Scaled'], bike_agg_df_outer['Flow_Scaled'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[0].scatter(bike_agg_df_inner['Density_Scaled'], bike_agg_df_inner['Flow_Scaled'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[0].scatter(car_agg_df_inner['Density_Scaled'], car_agg_df_inner['Flow_Scaled'], label='Cars', alpha=0.5)
-axs[0].set_xlabel('Scaled Density, $l_0 \\kappa$')
-axs[0].set_ylabel('Scaled Flow, $\\frac{l_0}{v_0} q$')
-# axs[0].legend()
-axs[0].set_ylim([0, 1.5])
-
-axs[1].scatter(bike_agg_df_outer['Density_Scaled'], bike_agg_df_outer['Speed_Scaled'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[1].scatter(bike_agg_df_inner['Density_Scaled'], bike_agg_df_inner['Speed_Scaled'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[1].scatter(car_agg_df_inner['Density_Scaled'], car_agg_df_inner['Speed_Scaled'], label='Cars', alpha=0.5)
-axs[1].set_xlabel('Scaled Density, $l_0 \\kappa $')
-axs[1].set_ylabel('Scaled Speed, $\\frac{v}{v_0}$')
-# axs[1].legend()
-axs[1].set_ylim([0, 1.5])
-
-h, l = axs[0].get_legend_handles_labels()
-fig.legend(h, l, bbox_to_anchor=(0.5, 1.08), loc='upper center', ncol=3, bbox_transform=fig.transFigure)
-fig.tight_layout()
-fig.savefig('../figures/BFD_CarsComparison_Space.pdf', dpi=300, bbox_inches='tight')
-
-# #############################################################################
-# MAIN: Compare FDs: Passenger Efficiency Perspective
-# #############################################################################
-car_agg_df_inner['Density_Eff_Max'] = car_agg_df_inner['Density'] * 4
-car_agg_df_inner['Flow_Eff_Max'] = car_agg_df_inner['Flow'] * 4
-car_agg_df_inner['Speed_Eff_Max'] = car_agg_df_inner['Speed']
-
-car_agg_df_inner['Density_Eff_Avg'] = car_agg_df_inner['Density'] * 1.5
-car_agg_df_inner['Flow_Eff_Avg'] = car_agg_df_inner['Flow'] * 1.5
-car_agg_df_inner['Speed_Eff_Avg'] = car_agg_df_inner['Speed']
-
-car_agg_df_inner['Density_Eff_Opt'] = car_agg_df_inner['Density'] * 2.5
-car_agg_df_inner['Flow_Eff_Opt'] = car_agg_df_inner['Flow'] * 2.5
-car_agg_df_inner['Speed_Eff_Opt'] = car_agg_df_inner['Speed']
-
-fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-axs[0].scatter(bike_agg_df_outer['Density'], bike_agg_df_outer['Flow'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[0].scatter(bike_agg_df_inner['Density'], bike_agg_df_inner['Flow'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[0].scatter(car_agg_df_inner['Density_Eff_Max'], car_agg_df_inner['Flow_Eff_Max'], label='Cars ($N_p$ = 4)', alpha=0.5)
-axs[0].scatter(car_agg_df_inner['Density_Eff_Opt'], car_agg_df_inner['Flow_Eff_Opt'], label='Cars ($N_p$ = 2.5)', alpha=0.5)
-axs[0].scatter(car_agg_df_inner['Density_Eff_Avg'], car_agg_df_inner['Flow_Eff_Avg'], label='Cars ($N_p$ = 1.5)', alpha=0.5)
-axs[0].set_xlabel('Density, $\\kappa$ [passengers/km]')
-axs[0].set_ylabel('Flow, $q$ [passengers/h]')
-# axs[0].legend()
-axs[0].set_ylim([0, 6000])
-
-axs[1].scatter(bike_agg_df_outer['Density'], bike_agg_df_outer['Speed'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[1].scatter(bike_agg_df_inner['Density'], bike_agg_df_inner['Speed'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[1].scatter(car_agg_df_inner['Density_Eff_Max'], car_agg_df_inner['Speed_Eff_Max'], label='Cars ($N_p$ = 4)', alpha=0.5)
-axs[1].scatter(car_agg_df_inner['Density_Eff_Opt'], car_agg_df_inner['Speed_Eff_Opt'], label='Cars ($N_p$ = 2.5)', alpha=0.5)
-axs[1].scatter(car_agg_df_inner['Density_Eff_Avg'], car_agg_df_inner['Speed_Eff_Avg'], label='Cars ($N_p$ = 1.5)', alpha=0.5)
-axs[1].set_xlabel('Density, $\\kappa$ [passengers/km]')
-axs[1].set_ylabel('Speed, $v$ [km/h]')
-# axs[1].legend()
-axs[1].set_ylim([0, 30])
-
-h, l = axs[0].get_legend_handles_labels()
-fig.legend(h, l, bbox_to_anchor=(0.5, 1.08), loc='upper center', ncol=3, bbox_transform=fig.transFigure)
-fig.tight_layout()
-fig.savefig('../figures/BFD_CarsComparison_Passenger.pdf', dpi=300, bbox_inches='tight')
-
-# #############################################################################
-# MAIN: Compare FDs: Trip Efficiency Perspective
-# #############################################################################
-trip_length_car, trip_avg_speed_car = 12, 18
-trip_length_bike, trip_avg_speed_bike = 5, 10
-
-car_agg_df_inner['Density_Trip'] = car_agg_df_inner['Density_Scaled'] / trip_length_car * 1.5
-car_agg_df_inner['Flow_Trip'] = car_agg_df_inner['Flow_Scaled'] * trip_avg_speed_car / trip_length_car * 1.5
-car_agg_df_inner['Speed_Trip'] = car_agg_df_inner['Speed_Scaled'] * trip_avg_speed_car
-
-bike_agg_df_outer['Density_Trip'] = bike_agg_df_outer['Density_Scaled'] / trip_length_bike
-bike_agg_df_outer['Flow_Trip'] = bike_agg_df_outer['Flow_Scaled'] * trip_avg_speed_bike / trip_length_bike
-bike_agg_df_outer['Speed_Trip'] = bike_agg_df_outer['Speed_Scaled'] * trip_avg_speed_bike
-
-bike_agg_df_inner['Density_Trip'] = bike_agg_df_inner['Density_Scaled'] / trip_length_bike
-bike_agg_df_inner['Flow_Trip'] = bike_agg_df_inner['Flow_Scaled'] * trip_avg_speed_bike / trip_length_bike
-bike_agg_df_inner['Speed_Trip'] = bike_agg_df_inner['Speed_Scaled'] * trip_avg_speed_bike
-
-fig, axs = plt.subplots(1, 2, figsize=(8, 4))
-axs[0].scatter(bike_agg_df_outer['Density_Trip'], bike_agg_df_outer['Flow_Trip'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[0].scatter(bike_agg_df_inner['Density_Trip'], bike_agg_df_inner['Flow_Trip'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[0].scatter(car_agg_df_inner['Density_Trip'], car_agg_df_inner['Flow_Trip'], label='Cars', alpha=0.5)
-axs[0].set_xlabel('Density, $\\kappa$ [passenger/trip length]')
-axs[0].set_ylabel('Flow, $q$ [passenger/trip duration]')
-# axs[0].legend()
-axs[0].set_ylim([0, 3])
-
-axs[1].scatter(bike_agg_df_outer['Density_Trip'], bike_agg_df_outer['Speed_Trip'], label='Bicycles ($lw$ = 2.5 m)', alpha=0.25)
-axs[1].scatter(bike_agg_df_inner['Density_Trip'], bike_agg_df_inner['Speed_Trip'], label='Bicycles ($lw$ = 3.75 m)', alpha=0.25)
-axs[1].scatter(car_agg_df_inner['Density_Trip'], car_agg_df_inner['Speed_Trip'], label='Cars', alpha=0.5)
-axs[1].set_xlabel('Density, $\\kappa$ [passenger/trip length]')
-axs[1].set_ylabel('Speed, $v$ [km/h]')
-# axs[1].legend()
-axs[1].set_ylim([0, 30])
-
-h, l = axs[0].get_legend_handles_labels()
-fig.legend(h, l, bbox_to_anchor=(0.5, 1.08), loc='upper center', ncol=4, bbox_transform=fig.transFigure)
-fig.tight_layout()
-fig.savefig('../figures/BFD_CarsComparison_Trip.pdf', dpi=300, bbox_inches='tight')
 
 # #############################################################################
 # MAIN: Process NGSIM Dataset
