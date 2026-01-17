@@ -23,7 +23,7 @@ To replicate the comparison across traffic modes (i.e. cars versus bicycles), pl
 ```
 src/figure_7_df_comparison_cars.py
 ```
-The PFD method (for motorized vehicles) is used to generate the traffic states for the NGSIM dataset. Please refer to the following GitHub repository: https://github.com/shaimaa-elbaklish/pfd_tse.git
+The PFD method (for motorized vehicles) is used to generate the traffic states for the SRF and ARED datasets. Please refer to the following GitHub repository: https://github.com/shaimaa-elbaklish/pfd_tse.git
 
 ## Publications
 ```
