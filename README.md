@@ -29,7 +29,7 @@ The PFD method (for motorized vehicles) is used to generate the traffic states f
 ## Publications
 ```
 Quantifying Bicycle Flow Efficiency: Inference of the Fundamental Diagram from Experimental Observations (2026).
-El-Baklish, S.K. and Riehl, K. and Ni, Y-C. and Ramseier, T. and Kouvelas, A. and Makridis, M.
+El-Baklish, S.K. and Ni, Y-C. and Riehl, K. and Kouvelas, A. and Makridis, M.
 (Submitted to Nature Communications)
 ```
 ```
